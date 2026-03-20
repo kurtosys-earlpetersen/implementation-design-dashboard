@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Implementation Design | Leveraging Automation and Platform Tools Q1 Report</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0f0f0f;
+      --surface: #1a1a1a;
+      --surface-hover: #242424;
+      --border: #2e2e2e;
+      --text: #f0f0f0;
+      --text-muted: #9ca3af;
+      --accent: #22c4b8;
+      --accent-dim: rgba(34, 196, 184, 0.15);
+      --amber: #f59e0b;
+      --amber-dim: rgba(245, 158, 11, 0.12);
+      --radius: 12px;
+      --radius-lg: 20px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.4);
+      --font: 'DM Sans', 'Outfit', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --text-base: 1.0625rem;
+      --leading: 1.6;
+      --scale: 1.25;
+    }
+
+    [data-theme="light"] {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-hover: #f1f5f9;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #475569;
+      --accent: #0d9488;
+      --accent-dim: rgba(13, 148, 136, 0.12);
+      --amber: #d97706;
+      --amber-dim: rgba(217, 119, 6, 0.12);
+      --shadow: 0 4px 24px rgba(0,0,0,0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: var(--font);
+      font-size: var(--text-base);
+      background: var(--bg);
+      color: var(--text);
+      line-height: var(--leading);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+      max-width: 100%;
+      margin: 0;
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    .theme-switch-wrap {
+      position: absolute;
+      top: 1.25rem;
+      right: 1.5rem;
+    }
+
+    .theme-switch {
+      display: block;
+      width: 52px;
+      height: 28px;
+      border-radius: 14px;
+      background: var(--surface-hover);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      position: relative;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .theme-switch:hover {
+      border-color: var(--accent);
+    }
+
+    .theme-switch::after {
+      content: "";
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--accent);
+      top: 2px;
+      left: 2px;
+      transition: transform 0.25s ease;
+    }
+
+    [data-theme="light"] .theme-switch::after {
+      transform: translateX(24px);
+    }
+
+    header {
+      position: relative;
+      margin-bottom: 3rem;
+      padding: 3rem 1.5rem 3.5rem;
+    }
+
+    .header-content {
+      max-width: 720px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 0 0 0.5rem;
+      line-height: 1.25;
+      background: linear-gradient(135deg, var(--text) 0%, var(--text-muted) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header-subtitle {
+      font-size: 0.9375rem;
+      font-weight: 500;
+      color: var(--accent);
+      margin: 0 0 1rem;
+      text-align: center;
+    }
+
+    .header-desc {
+      color: var(--text-muted);
+      font-size: 1rem;
+      line-height: var(--leading);
+      margin: 0 auto;
+      text-align: center;
+      max-width: 560px;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      text-align: center;
+    }
+
+    .stat-card .stat-value {
+      font-size: 1.625rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 0.35rem;
+      letter-spacing: -0.02em;
+    }
+
+    .stat-card .stat-label {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .grid {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      display: flex;
+      flex-direction: row;
+      width: 100%;
+      min-height: 140px;
+    }
+
+    .card:hover {
+      outline: none;
+      box-shadow: 0 0 0 3px var(--accent), var(--shadow);
+    }
+
+    .card-image {
+      width: 20px;
+      min-width: 20px;
+      flex-shrink: 0;
+      background: var(--surface-hover);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card-image .dummy {
+      width: 100%;
+      height: 100%;
+      min-height: 140px;
+      display: block;
+    }
+
+    .card-body {
+      padding: 1.375rem 1.75rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .card h2 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem;
+      line-height: 1.35;
+      letter-spacing: -0.01em;
+    }
+
+    .card-desc {
+      font-size: 0.9375rem;
+      color: var(--text-muted);
+      line-height: var(--leading);
+      margin-bottom: 1rem;
+      flex: 1;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-time {
+      font-size: 0.8125rem;
+      color: var(--amber);
+      background: var(--amber-dim);
+      padding: 0.4rem 0.7rem;
+      border-radius: 8px;
+      margin-bottom: 0.75rem;
+      font-weight: 500;
+    }
+
+    .card-example {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      font-style: italic;
+      line-height: 1.5;
+      margin-bottom: 1rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      color: var(--accent);
+      text-decoration: none;
+      margin-top: auto;
+    }
+
+    .card-link:hover {
+      text-decoration: underline;
+    }
+
+    .card-link svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .card-dropdown {
+      margin-top: 1rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .card-dropdown summary {
+      padding: 0.65rem 1rem;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      color: var(--accent);
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
+    }
+
+    .card-dropdown summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .card-dropdown summary::before {
+      content: "▶ ";
+      font-size: 0.65rem;
+      margin-right: 0.35rem;
+    }
+
+    .card-dropdown[open] summary::before {
+      content: "▼ ";
+    }
+
+    .card-dropdown .report-inner {
+      padding: 1rem 1.25rem;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      max-height: 60vh;
+      overflow-y: auto;
+    }
+
+    .card-images-wrap {
+      margin-top: 1.25rem;
+      margin-bottom: 0;
+      width: 100%;
+    }
+
+    .card-item-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0.75rem;
+      margin-top: 1rem;
+      margin-bottom: 1rem;
+      width: 100%;
+    }
+
+    .card-item-stat {
+      background: var(--surface-hover);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.65rem 0.9rem;
+    }
+
+    .card-item-stat .card-item-stat-value {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 0.2rem;
+    }
+
+    .card-item-stat .card-item-stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      line-height: 1.3;
+    }
+
+    .report-images-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.875rem;
+      width: 100%;
+    }
+
+    .report-image-placeholder {
+      aspect-ratio: 16/10;
+      background: var(--surface-hover);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      text-align: center;
+      padding: 0;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+      overflow: hidden;
+    }
+
+    .report-image-placeholder:hover {
+      border-color: var(--accent);
+      background: var(--surface);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    }
+
+    [data-theme="light"] .report-image-placeholder:hover {
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+
+    .card-images-wrap .report-image-placeholder {
+      aspect-ratio: 16/10;
+      min-height: 120px;
+    }
+
+    .report-image-placeholder img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: calc(var(--radius) - 1px);
+      display: block;
+    }
+
+    .card-images-wrap .report-image-placeholder img {
+      min-height: 120px;
+      object-fit: cover;
+    }
+
+    .script-dropdown {
+      margin-top: 1rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .script-dropdown summary {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer;
+      list-style: none;
+    }
+
+    .script-dropdown summary::-webkit-details-marker { display: none; }
+
+    .script-dropdown summary::before { content: "▶ "; font-size: 0.6rem; margin-right: 0.25rem; }
+
+    .script-dropdown[open] summary::before { content: "▼ "; }
+
+    .script-dropdown pre {
+      margin: 0;
+      padding: 1rem;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      line-height: 1.4;
+      overflow-x: auto;
+      max-height: 40vh;
+      overflow-y: auto;
+    }
+
+    .script-dropdown code { color: var(--text-muted); }
+
+    /* Lightbox */
+    .lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(0,0,0,0.92);
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 2rem 100px;
+    }
+
+    .lightbox.is-open { display: flex; }
+
+    .lightbox-content {
+      flex: 1;
+      width: 100%;
+      max-width: 90vw;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 0;
+    }
+
+    .lightbox-content img,
+    #lightbox-image-wrap img {
+      max-width: 100%;
+      max-height: calc(100vh - 140px);
+      object-fit: contain;
+      border-radius: var(--radius);
+      border: 4px solid #fff;
+      box-sizing: border-box;
+    }
+
+    .lightbox-ui {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem 1.5rem 1.5rem;
+      background: rgba(0,0,0,0.95);
+      gap: 0.5rem;
+      z-index: 10000;
+    }
+
+    .lightbox-title {
+      color: var(--text);
+      font-size: 1rem;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .lightbox-count {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    .lightbox-close {
+      position: static;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.25rem;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 0.25rem;
+    }
+
+    .lightbox-close:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .lightbox-nav {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+    }
+
+    .lightbox-nav button {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .lightbox-nav button:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .report-full {
+      font-size: 0.9375rem;
+      color: var(--text-muted);
+      line-height: var(--leading);
+    }
+
+    .report-full h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 1rem 0 0.4rem 0;
+    }
+
+    .report-full h3:first-child {
+      margin-top: 0;
+    }
+
+    .report-full p {
+      margin: 0 0 0.5rem 0;
+    }
+
+    .report-full ul, .report-full ol {
+      margin: 0.25rem 0 0.75rem 1.25rem;
+      padding: 0;
+    }
+
+    .report-full table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.5rem 0 1rem 0;
+      font-size: 0.8125rem;
+    }
+
+    .report-full th, .report-full td {
+      border: 1px solid var(--border);
+      padding: 0.35rem 0.5rem;
+      text-align: left;
+    }
+
+    .report-full th {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    footer {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      line-height: var(--leading);
+      border-top: 1px solid var(--border);
+      margin-top: 2rem;
+    }
+
+    .report-full h2 { font-size: 0.95rem; color: var(--text); margin: 1.25rem 0 0.5rem 0; }
+    .report-full h2:first-of-type { margin-top: 0; }
+
+    .bottom-section {
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .bottom-section .explainer {
+      max-width: 72ch;
+      font-size: 1rem;
+      color: var(--text-muted);
+      line-height: var(--leading);
+      margin-bottom: 2rem;
+    }
+
+    .bottom-section .link-lists {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .bottom-section .link-list h4 {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 0 0 0.5rem 0;
+    }
+
+    .bottom-section .link-list ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .bottom-section .link-list a {
+      font-size: 0.9375rem;
+      color: var(--accent);
+      text-decoration: none;
+      display: block;
+      padding: 0.25rem 0;
+    }
+
+    .bottom-section .link-list a:hover {
+      text-decoration: underline;
+    }
+
+    @media (min-width: 768px) {
+      .report-images-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .report-images-grid {
+        grid-template-columns: repeat(6, 1fr);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .theme-switch-wrap {
+        top: 1rem;
+        right: 1rem;
+      }
+      .header-content {
+        padding-top: 2.5rem;
+      }
+      .stats-row {
+        grid-template-columns: 1fr;
+      }
+      .card {
+        flex-direction: column;
+        min-height: 0;
+      }
+      .card-image {
+        width: 100%;
+        min-width: 100%;
+        height: 20px;
+      }
+      .card-image .dummy {
+        min-height: 20px;
+      }
+      .report-images-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+      }
+      .card-images-wrap .report-image-placeholder {
+        min-height: 90px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div class="theme-switch-wrap">
+        <button type="button" id="theme-toggle" class="theme-switch" role="switch" aria-label="Toggle dark or light mode" aria-checked="false"></button>
+      </div>
+      <div class="header-content">
+        <h1>Implementation Design | Leveraging Automation and Platform Tools Q1 Report</h1>
+        <p class="header-subtitle">Assignee : Christyn Pienaar</p>
+        <p class="header-desc">Tools & solutions summary — design system, accessibility, document automation, and InDesign workflows. Cross collaborative iteration and tooling solutions.</p>
+      </div>
+    </header>
+
+    <section class="stats-row" aria-label="Summary statistics">
+      <div class="stat-card">
+        <div class="stat-value">~4–12 h</div>
+        <div class="stat-label">Avg. time saved per workflow (estimated across tools)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">6</div>
+        <div class="stat-label">Initiatives in review (Figma, InDesign, design system, accessibility)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">4 h – 12 h</div>
+        <div class="stat-label">Time-savings range per workflow (from tool estimates)</div>
+      </div>
+    </section>
+
+    <main class="grid">
+      <article id="feature-automation-suggestions" class="card">
+        <div class="card-image">
+          <span class="dummy" style="background: linear-gradient(135deg, #06b6d4 0%, #0e7490 100%);"></span>
+        </div>
+        <div class="card-body">
+          <h2>Feature Automation Suggestions</h2>
+          <p class="card-desc">Backlog of 105 script/automation ideas across 13 categories: Figma–InDesign, investment reporting, charts & tables, graphics, typography, QA, document structure, export. Each has priority, time-savings estimate, tech (UXP, ExtendScript, SFI SDK), and status.</p>
+          <p class="card-example">e.g. Prioritising next automation; aligning with existing tools (Figma to InDesign, Smart Table Styler, Kleen); capacity and roadmap planning.</p>
+          <a class="card-link" href="https://bleak-clever-17464714.figma.site/" target="_blank" rel="noopener">Open Feature Automation Suggestions <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7h-8M17 7v8"/></svg></a>
+          <div class="card-images-wrap">
+            <div class="report-images-grid">
+              <div class="report-image-placeholder" data-report-image="feature-auto-1" aria-label="Image 1"><img src="Q1 Report on Initiatives Work/FeatureAutomationSuggestions_01.png" alt="Feature Automation 1" loading="lazy" /></div>
+              <div class="report-image-placeholder" data-report-image="feature-auto-2" aria-label="Image 2"><img src="Q1 Report on Initiatives Work/FeatureAutomationSuggestions_02.png" alt="Feature Automation 2" loading="lazy" /></div>
+              <div class="report-image-placeholder" data-report-image="feature-auto-3" aria-label="Image 3"><img src="Q1 Report on Initiatives Work/FeatureAutomationSuggestions_03.png" alt="Feature Automation 3" loading="lazy" /></div>
+              <div class="report-image-placeholder" data-report-image="feature-auto-4" aria-label="Image 4"><img src="Q1 Report on Initiatives Work/FeatureAutomationSuggestions_04.png" alt="Feature Automation 4" loading="lazy" /></div>
+            </div>
+          </div>
+          <div class="card-item-stats">
+            <div class="card-item-stat"><div class="card-item-stat-value">Roadmap</div><div class="card-item-stat-label">Time savings</div></div>
+            <div class="card-item-stat"><div class="card-item-stat-value">37</div><div class="card-item-stat-label">High-priority items</div></div>
+            <div class="card-item-stat"><div class="card-item-stat-value">13</div><div class="card-item-stat-label">Categories</div></div>
+          </div>
+          <details class="card-dropdown">
+            <summary>Full report</summary>
+            <div class="report-inner">
+              <div class="report-full">
+                <h3>1. Overview</h3>
+                <p>The site presents a <strong>backlog of 105 script/automation ideas</strong> for design and production workflows, with <strong>37 high-priority</strong> items and <strong>13 categories</strong>. Each idea includes a title, priority (High / Medium / Low), description, category, estimated time savings, technology (UXP Plugin, ExtendScript, SFI SDK, etc.), and status (To Do, In Progress, Discovery Phase, Completed, On Hold, Denied). The list supports prioritisation and roadmap planning.</p>
+                <h3>2. Summary Counts</h3>
+                <table><tr><th>Metric</th><th>Value</th></tr><tr><td>Total script ideas</td><td>105</td></tr><tr><td>High priority</td><td>37</td></tr><tr><td>Categories</td><td>13</td></tr></table>
+                <h3>3. Categories (from site)</h3>
+                <table><tr><th>Category</th><th>Focus</th></tr><tr><td>Figma-InDesign Integration</td><td>Design-to-production; style extraction and import (e.g. #0 Figma Styles to InDesign Extractor)</td></tr><tr><td>Investment Reporting – Data Integration</td><td>Financial data validation, Excel/CSV linking, performance charts, GIPS compliance, benchmark sync, holdings import, factsheet data binding, attribution tables, multi-currency, TWR, risk metrics, commentary, disclosures, data refresh</td></tr><tr><td>Chart & Table Automation</td><td>Smart Table Styler, table-to-chart, row/column calculations, merge/split, chart style library, conditional formatting, sort/filter, auto-resize, waterfall charts</td></tr><tr><td>Graphic & Image Automation</td><td>Image placeholders, batch replacement, metadata overlay, logo placement, resolution validator, frame fitting, color mode conversion, link organiser, crop/bleed, QR/barcode</td></tr><tr><td>Typography & Text Automation</td><td>Drop caps, text cleanup, paragraph style analyser, footnotes/endnotes, text variables, H&J, case converter, find/replace power panel, glyph manager</td></tr><tr><td>Quality Control & Review</td><td>Spelling/grammar plus, version comparison, preflight profiles, overset detector, color consistency, font auditor, accessibility checker, bleed/trim, consistency checker, document health score</td></tr><tr><td>Document Structure & Navigation</td><td>TOC generator plus, hyperlink manager, bookmark/section manager, master page auto-applier, page numbering, chapter/section organiser, index generator, document merge, book file sync, cross-reference validator</td></tr><tr><td>Export & Output</td><td>PDF export preset manager, batch PDF exporter, print package assembler, IDML export, multi-format exporter, separate page exporter, printer spread exporter</td></tr><tr><td>Interactive & Other</td><td>Interactive PDF elements and further ideas across the 105</td></tr></table>
+                <h3>4. Sample Ideas (by number)</h3>
+                <table><tr><th>#</th><th>Title</th><th>Priority</th><th>Time savings</th><th>Tech</th></tr><tr><td>0</td><td>Figma Styles to InDesign Extractor</td><td>High</td><td>5–8 h / design system</td><td>UXP, Figma Plugin API, JSON</td></tr><tr><td>1</td><td>Financial Data Validator & Formatter</td><td>High</td><td>3–5 h / report</td><td>UXP, SFI SDK</td></tr><tr><td>8</td><td>Factsheet Data Binding System</td><td>High</td><td>3–5 h / factsheet update cycle</td><td>UXP, SFI SDK</td></tr><tr><td>16</td><td>Smart Table Styler</td><td>High</td><td>2–3 h / document</td><td>ExtendScript</td></tr><tr><td>27</td><td>Batch Image Replacement</td><td>High</td><td>2–4 h / large-scale update</td><td>ExtendScript</td></tr><tr><td>33</td><td>Image Link Organizer</td><td>High</td><td>1–3 h / link issue resolution</td><td>ExtendScript</td></tr><tr><td>46</td><td>Spelling & Grammar Checker Plus</td><td>High</td><td>2–3 h / review cycle</td><td>UXP</td></tr><tr><td>67</td><td>Batch PDF Exporter</td><td>High</td><td>2–4 h / batch export</td><td>UXP</td></tr></table>
+                <h3>5. Status and Workflow</h3>
+                <p>Each idea can be tagged: To Do, In Progress, Discovery Phase, Completed, On Hold, Denied. Supports pipeline visibility and reporting.</p>
+                <h3>6. Summary for Report</h3>
+                <p>Feature Automation Suggestions is a Figma-hosted backlog of 105 automation/script ideas for design and production (InDesign, Figma, investment reporting, charts/tables, graphics, typography, QA, document structure, export). Ideas are grouped into 13 categories, tagged by priority (37 high) and status, with time-savings estimates and tech. Useful for prioritising automation work, aligning with existing tools (e.g. Figma Styles to InDesign, Smart Table Styler, Kleen), and planning roadmap and capacity.</p>
+              </div>
+            </div>
+          </details>
+        </div>
+      </article>
+      <article id="figma-styles-to-indesign" class="card">
+        <div class="card-image">
+          <span class="dummy" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);"></span>
+        </div>
+        <div class="card-body">
+          <h2>Figma Styles to InDesign</h2>
+          <p class="card-desc">Figma plugin + InDesign script. Exports paragraph, character, color, and effect styles from Figma (JSON or .jsx) and imports into InDesign. Merge when updating so styles refresh without duplication.</p>
+          <p class="card-example">e.g. Pushing brand refresh from Figma into InDesign templates for factsheets and marketing.</p>
+          <a class="card-link" href="#">Scripts folder → FigmaStylesToInDesign.jsx <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7h-8M17 7v8"/></svg></a>
+          <div class="card-images-wrap">
+            <div class="report-images-grid">
+              <div class="report-image-placeholder" data-report-image="figma-1" aria-label="Image 1"><img src="Q1 Report on Initiatives Work/Figma2Indesign_01.png" alt="Figma to InDesign 1" loading="lazy" /></div>
+              <div class="report-image-placeholder" data-report-image="figma-2" aria-label="Image 2"><img src="Q1 Report on Initiatives Work/Figma2Indesign_02.png" alt="Figma to InDesign 2" loading="lazy" /></div>
+              <div class="report-image-placeholder" data-report-image="figma-3" aria-label="Image 3"><img src="Q1 Report on Initiatives Work/Figma2Indesign_03.png" alt="Figma to InDesign 3" loading="lazy" /></div>
+            </div>
+          </div>
+          <div class="card-item-stats">
+            <div class="card-item-stat"><div class="card-item-stat-value">~5–12 h</div><div class="card-item-stat-label">Time saved per design system</div></div>
+            <div class="card-item-stat"><div class="card-item-stat-value">~10–50×</div><div class="card-item-stat-label">Speed (report)</div></div>
+            <div class="card-item-stat"><div class="card-item-stat-value">Design system sync</div><div class="card-item-stat-label">Primary use</div></div>
+          </div>
+          <details class="card-dropdown">
+            <summary>Full report</summary>
+            <div class="report-inner">
+              <div class="report-full">
+                <h3>Overview</h3>
+                <p><strong>Figma Styles to InDesign</strong> — Figma plugin + InDesign script. Main files: FigmaStylesToInDesign.jsx, FigmaPlugin/code.js, ui.html. Extracts paragraph, character, color, and effect styles from Figma (JSON or .jsx) and imports into InDesign. Supports merge when updating existing docs so styles refresh without duplication. Keeps design system in Figma and InDesign in sync.</p>
+                <h3>Import/Export vs Create-and-Edit</h3>
+                <p><strong>Export</strong> styles from Figma (JSON or .jsx) → <strong>Import</strong> in InDesign. One flow; styles created in bulk from design source. Without it: manually creating each paragraph style, character style, swatch, and object style in InDesign and matching Figma by hand. <strong>Recommendation:</strong> Use import/export. Creating and editing dozens of styles by hand is slow and error-prone.</p>
+                <h3>Time Savings & Speed</h3>
+                <p><strong>~5–8 hours per design system</strong> (vs manual creation and sync of 20–50+ styles). <strong>~10–50×</strong> speed increase (bulk creation in seconds/minutes vs hours).</p>
+                <h3>Effective Usage</h3>
+                <p>Use import/export for any design-system or template work. Use “Merge” when updating an existing doc so styles refresh without duplication. Keeps brand consistency and avoids re-creating styles by hand.</p>
+                <h3>Summary</h3>
+                <p>Import/export (Figma → InDesign) is the most impactful for design-system and template work. Using the script as intended maximizes time savings and keeps workflows predictable.</p>
+              </div>
+              <details class="script-dropdown">
+                <summary>Script code (.jsx)</summary>
+                <pre><code>// Figma Styles to InDesign — InDesign script
+// Add FigmaStylesToInDesign.jsx to this project to display script code here.
+// Files: FigmaStylesToInDesign.jsx, FigmaPlugin/code.js, ui.html (Scripts folder)</code></pre>
+              </details>
+            </div>
+          </details>
+        </div>
+      </article>
+      <article id="font-unit-accessibility-checker" class="card">
+        <div class="card-image">
+          <span class="dummy" style="background: linear-gradient(135deg, #10b981 0%, #047857 100%);"></span>
+        </div>
+        <div class="card-body">
+          <h2>Font Unit & Accessibility Checker</h2>
+          <p class="card-desc">Dynamic type scale and WCAG 2.1 tool. Font sizing, unit conversions (px, pt, rem, em, vw, vh, %), contrast across Web, Print, Mobile. Export XML, JSON, CSV, JSX, IDJS.</p>
+          <p class="card-example">e.g. Defining body/heading sizes for web and print to meet WCAG AA; exporting scale for dev or InDesign.</p>
+          <a class="card-link" href="https://bridge-dull-12878727.figma.site/" target="_blank" rel="noopener">Open tool <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7h-8M17 7v8"/></svg></a>
+          <div class="card-images-wrap">
+            <div class="report-images-grid">
+              <div class="report-image-placeholder" data-report-image="font-acc-1" aria-label="Image 1"><img src="Q1 Report on Initiatives Work/FontUnit_AccessibilityChecker_01.png" alt="Font Unit & Accessibility 1" loading="lazy" /></div>
+              <div class="report-image-placeholder" data-report-image="font-acc-2" aria-label="Image 2"><img src="Q1 Report on Initiatives Work/FontUnit_AccessibilityChecker_02.png" alt="Font Unit & Accessibility 2" loading="lazy" /></div>
+              <div class="report-image-placeholder" data-report-image="font-acc-3" aria-label="Image 3"><img src="Q1 Report on Initiatives Work/FontUnit_AccessibilityChecker_03.png" alt="Font Unit & Accessibility 3" loading="lazy" /></div>
+              <div class="report-image-placeholder" data-report-image="font-acc-4" aria-label="Image 4"><img src="Q1 Report on Initiatives Work/FontUnit_AccessibilityChecker_04.png" alt="Font Unit & Accessibility 4" loading="lazy" /></div>
+              <div class="report-image-placeholder" data-report-image="font-acc-5" aria-label="Image 5"><img src="Q1 Report on Initiatives Work/FontUnit_AccessibilityChecker_05.png" alt="Font Unit & Accessibility 5" loading="lazy" /></div>
+              <div class="report-image-placeholder" data-report-image="font-acc-6" aria-label="Image 6"><img src="Q1 Report on Initiatives Work/FontUnit_AccessibilityChecker_06.png" alt="Font Unit & Accessibility 6" loading="lazy" /></div>
+            </div>
+          </div>
+          <div class="card-item-stats">
+            <div class="card-item-stat"><div class="card-item-stat-value">~4–6 h</div><div class="card-item-stat-label">Time saved per type-scale check</div></div>
+            <div class="card-item-stat"><div class="card-item-stat-value">Web / Print / Mobile</div><div class="card-item-stat-label">Contexts (report)</div></div>
+            <div class="card-item-stat"><div class="card-item-stat-value">WCAG 2.1</div><div class="card-item-stat-label">Standards</div></div>
+          </div>
+          <details class="card-dropdown">
+            <summary>Full report</summary>
+            <div class="report-inner">
+              <div class="report-full">
+                <h3>1. Overview</h3>
+                <p>The site presents a <strong>Dynamic Type Scale Accessibility Tool</strong> for checking font sizing, unit conversions, and WCAG 2.1–aligned contrast and readability across <strong>Web</strong>, <strong>Print</strong>, and <strong>Mobile</strong> contexts. It supports font selection, type scale generation, DPI settings, and export (XML, JSON, CSV, JSX, IDJS). Tagline: <em>Font Unit Converter & Accessibility Showcase • WCAG 2.1 Compliant • All units and contexts customizable</em></p>
+                <h3>2. Contexts & Viewport Settings</h3>
+                <table><tr><th>Context</th><th>Dimensions</th><th>Base size</th><th>DPI</th><th>Parent</th><th>Ratio</th></tr><tr><td>Web</td><td>1920×1080</td><td>16px</td><td>96</td><td>16px</td><td>1.778</td></tr><tr><td>Print</td><td>816×1056</td><td>12px</td><td>96</td><td>12px</td><td>0.773</td></tr><tr><td>Mobile</td><td>375×667</td><td>16px</td><td>96</td><td>16px</td><td>0.562</td></tr></table>
+                <h3>3. Type Scale Specimens</h3>
+                <p>Seven-level type scale (XS–3XL) with specimen text, size (px), weight, and Accessibility Check (PASS/FAIL). Scale levels: XS ~8.2px FAIL, SM ~10.2px FAIL, BASE ~12.8px FAIL (3.2px below 16px body min), LG 16.0px PASS, XL 20.0px PASS, 2XL 25.0px PASS, 3XL ~31.3px PASS. Base unit conversions: px, pt, em/rem, vw/vh/% (context-dependent).</p>
+                <h3>4. Accessibility Checks</h3>
+                <p><strong>Contrast:</strong> AA 4.5:1 (normal text), AAA 7:1 (normal text). Large text: AA 3:1, AAA 4.5:1. Large text = 18pt (24px) or 14pt (~18.66px) bold and larger. <strong>Font size:</strong> Minimum 16px for body text. <strong>Font weight:</strong> 400 appropriate. Display options: “Show Accessibility Checks” and “Use WCAG Standards”.</p>
+                <h3>5. Standards Referenced</h3>
+                <p><strong>Web:</strong> Desktop 1920×1080 (Full HD); DPI 96; base font 16px (1rem); 1vw = 1% width. <strong>Print:</strong> US Letter 816×1056px @ 96dpi; A4 793×1122px; 1pt = 1/72 inch; body 10–12pt. <strong>Mobile:</strong> iPhone/Android viewports; base font 16px minimum; touch targets 44×44px minimum.</p>
+                <h3>6. Font & Scale Controls</h3>
+                <p>Font source: e.g. Inter; upload custom (.ttf, .otf, .woff, .woff2). Type scale: Major Third (1.25); base size configurable; Regenerate. Colors: foreground and background for contrast analysis.</p>
+                <h3>7. DPI Behavior</h3>
+                <p>Context DPI for Web/Desktop, Print, Mobile (96, 72, 144, 192). Formula: pixels = (points ÷ 72) × DPI. 96 DPI: 1pt = 1.333px; 72 DPI: 1pt = 1px; 144+ DPI: retina/high-DPI.</p>
+                <h3>8. Export</h3>
+                <p>Formats: XML, JSON, CSV, JSX, IDJS. Context: Web, Print, or Mobile. Optional: color swatches, character/paragraph styles. InDesign: File → Import XML.</p>
+                <h3>9. Summary for Report</h3>
+                <p>The tool provides type scale specimens, unit conversions (px, pt, rem, em, vw, vh, %), and WCAG 2.1–oriented checks across Web, Print, and Mobile. Export supports design and dev workflows including InDesign XML import.</p>
+              </div>
+            </div>
+          </details>
+        </div>
+      </article>
+      <article id="invesco-concept-factsheet" class="card">
+        <div class="card-image">
+          <span class="dummy" style="background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%);"></span>
+        </div>
+        <div class="card-body">
+          <h2>Invesco Concept Factsheet Figma Make</h2>
+          <p class="card-desc">Four-page Figma prototype: summary metrics, performance vs benchmark, top 10 holdings, portfolio/risk, breakdowns, manager commentary, fund info, legal/disclosure. Reference for structure and compliance wording.</p>
+          <p class="card-example">e.g. Standard layout and disclosure blocks for new fund factsheets; swap in fund data, keep risk/legal consistent.</p>
+          <a class="card-link" href="https://middle-markup-58597903.figma.site/" target="_blank" rel="noopener">Open concept factsheet <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7h-8M17 7v8"/></svg></a>
+          <div class="card-images-wrap">
+            <div class="report-images-grid">
+              <div class="report-image-placeholder" data-report-image="invesco-1" aria-label="Image 1"><img src="Q1 Report on Initiatives Work/Invesco_01.png" alt="Invesco 1" loading="lazy" /></div>
+              <div class="report-image-placeholder" data-report-image="invesco-2" aria-label="Image 2"><img src="Q1 Report on Initiatives Work/Invesco_02.png" alt="Invesco 2" loading="lazy" /></div>
+              <div class="report-image-placeholder" data-report-image="invesco-3" aria-label="Image 3"><img src="Q1 Report on Initiatives Work/Invesco_03.png" alt="Invesco 3" loading="lazy" /></div>
+            </div>
+          </div>
+          <div class="card-item-stats">
+            <div class="card-item-stat"><div class="card-item-stat-value">~4–5 h</div><div class="card-item-stat-label">Time saved per factsheet when reused</div></div>
+            <div class="card-item-stat"><div class="card-item-stat-value">4-page</div><div class="card-item-stat-label">Prototype (report)</div></div>
+            <div class="card-item-stat"><div class="card-item-stat-value">Factsheet structure</div><div class="card-item-stat-label">Primary use</div></div>
+          </div>
+          <details class="card-dropdown">
+            <summary>Full report</summary>
+            <div class="report-inner">
+              <div class="report-full">
+                <h3>1. Overview</h3>
+                <p>The site presents a <strong>concept factsheet</strong> for <strong>Invesco Global Growth Fund</strong> (Class A Shares - USD), as of March 31, 2026. It is a four-page, Figma-hosted prototype covering fund summary, performance, holdings, portfolio characteristics, risk metrics, geographic/sector/currency breakdowns, manager commentary, and legal/disclosure text. Contact: invesco.com | +1-800-959-4246.</p>
+                <h3>2. Fund Identification</h3>
+                <table><tr><th>Field</th><th>Value</th></tr><tr><td>Fund</td><td>Invesco Global Growth Fund</td></tr><tr><td>Share Class</td><td>Class A Shares - USD</td></tr><tr><td>As of</td><td>March 31, 2026</td></tr><tr><td>ISIN</td><td>US46090E1038</td></tr><tr><td>Bloomberg</td><td>INVGLBA LX</td></tr><tr><td>SEDOL</td><td>B1YW440</td></tr><tr><td>CUSIP</td><td>46090E103</td></tr><tr><td>Inception Date</td><td>15/01/2025 (~1.2 years)</td></tr></table>
+                <h3>3. Key Metrics (Page 1)</h3>
+                <table><tr><th>Metric</th><th>Value</th></tr><tr><td>NAV (USD)</td><td>$42.87 (+0.23, +0.54%)</td></tr><tr><td>Total Net Assets</td><td>$2.4B (as of 03/31/26)</td></tr><tr><td>YTD Return (Q1 2026)</td><td>+8.42%</td></tr><tr><td>1 Year Return</td><td>+12.35% (vs +10.87% index)</td></tr><tr><td>3 Year (Ann.)</td><td>+9.18% (vs +8.24% index)</td></tr></table>
+                <h3>4. Investment Objective</h3>
+                <p>The Fund seeks long-term capital appreciation by investing primarily in equity securities of companies across developed and emerging markets. The portfolio focuses on quality growth companies with sustainable competitive advantages and strong balance sheets.</p>
+                <h3>5. Performance (Net of Fees)</h3>
+                <p><strong>Benchmark:</strong> MSCI ACWI Index.</p>
+                <table><tr><th>Period</th><th>Fund (%)</th><th>Benchmark (%)</th><th>+/- (%)</th></tr><tr><td>1 Month</td><td>+2.45</td><td>+2.12</td><td>+0.33</td></tr><tr><td>3 Month (QTD)</td><td>+8.42</td><td>+7.23</td><td>+1.19</td></tr><tr><td>6 Month</td><td>+14.67</td><td>+13.45</td><td>+1.22</td></tr><tr><td>1 Year</td><td>+12.35</td><td>+10.87</td><td>+1.48</td></tr><tr><td>3 Year (Ann.)</td><td>+9.18</td><td>+8.24</td><td>+0.94</td></tr><tr><td>5 Year (Ann.)</td><td>+11.42</td><td>+10.15</td><td>+1.27</td></tr><tr><td>Since Inception (Ann.)</td><td>+8.96</td><td>+7.84</td><td>+1.12</td></tr></table>
+                <h3>6. Top 10 Holdings</h3>
+                <table><tr><th>Security Name</th><th>Ticker</th><th>Weight %</th></tr><tr><td>Microsoft Corporation</td><td>MSFT</td><td>8.5%</td></tr><tr><td>Apple Inc.</td><td>AAPL</td><td>7.2%</td></tr><tr><td>NVIDIA Corporation</td><td>NVDA</td><td>6.8%</td></tr><tr><td>Amazon.com Inc.</td><td>AMZN</td><td>5.9%</td></tr><tr><td>Alphabet Inc. Class A</td><td>GOOGL</td><td>5.3%</td></tr><tr><td>Meta Platforms Inc.</td><td>META</td><td>4.7%</td></tr><tr><td>Tesla Inc.</td><td>TSLA</td><td>4.2%</td></tr><tr><td>Johnson & Johnson</td><td>JNJ</td><td>3.9%</td></tr><tr><td>Visa Inc.</td><td>V</td><td>3.6%</td></tr><tr><td>UnitedHealth Group Inc.</td><td>UNH</td><td>3.4%</td></tr><tr><td><strong>Total Top 10</strong></td><td></td><td><strong>53.5%</strong></td></tr></table>
+                <p>Total portfolio holdings: 68. <em>Holdings are subject to change.</em></p>
+                <h3>7. Portfolio Characteristics</h3>
+                <table><tr><th>Metric</th><th>Value</th></tr><tr><td>Weighted Avg. Market Cap</td><td>$287.4B</td></tr><tr><td>Price/Earnings Ratio</td><td>24.3x</td></tr><tr><td>Price/Book Ratio</td><td>4.8x</td></tr><tr><td>Dividend Yield</td><td>1.4%</td></tr><tr><td>Active Share</td><td>78%</td></tr><tr><td>Turnover Ratio</td><td>42%</td></tr></table>
+                <h3>8. Risk Metrics</h3>
+                <table><tr><th>Metric</th><th>Value</th></tr><tr><td>Standard Deviation</td><td>14.2%</td></tr><tr><td>Sharpe Ratio</td><td>0.85</td></tr><tr><td>Beta</td><td>1.08</td></tr><tr><td>Alpha</td><td>2.3%</td></tr></table>
+                <h3>9. Asset Class Breakdown</h3>
+                <table><tr><th>Asset Class</th><th>Weight %</th></tr><tr><td>Common Stock</td><td>82.5%</td></tr><tr><td>Corporate Bonds</td><td>12.3%</td></tr><tr><td>Government Bonds</td><td>3.2%</td></tr><tr><td>Cash & Equivalents</td><td>2.0%</td></tr></table>
+                <h3>10. Portfolio Breakdown (Page 2)</h3>
+                <p><strong>Geographic:</strong> United States 58.4%, Europe 22.3%, Asia Pacific 12.8%, Emerging Markets 4.5%, Other 2.0%. <strong>Currency:</strong> USD 62.5%, EUR 18.3%, GBP 8.4%, JPY 5.2%, CHF 3.6%, Other 2.0%. <strong>Sector:</strong> Information Technology 32.5%, Health Care 18.3%, Financials 14.2%, Consumer Discretionary 12.8%, Industrials 9.6%, Communication Services 7.4%, Consumer Staples 3.2%, Energy 2.0%.</p>
+                <h3>11. Portfolio Manager Commentary (Page 3)</h3>
+                <p>Market environment: Global equity strength; technology and healthcare leading. Performance attribution: Fund outperformed benchmark by 142 bps. Positioning: Quality growth; increased EM technology. Risk management: A+ average credit; ~70% non-USD hedged. Outlook: Constructive on quality growth.</p>
+                <h3>12. Fund Information</h3>
+                <table><tr><th>Field</th><th>Value</th></tr><tr><td>Fund Manager</td><td>Invesco Advisers, Inc.</td></tr><tr><td>Portfolio Managers</td><td>John Smith, CFA / Sarah Johnson, CFA</td></tr><tr><td>Benchmark Index</td><td>MSCI ACWI Index</td></tr><tr><td>Domicile</td><td>Luxembourg (UCITS)</td></tr><tr><td>Management Fee</td><td>0.75%</td></tr><tr><td>Minimum Initial Investment</td><td>$1,000</td></tr></table>
+                <h3>13. Important Information & Disclosures (Page 4)</h3>
+                <p>Past performance not indicative of future results; investment risks; holdings subject to change; index information; distribution disclaimer; ratings; glossary (Active Share, NAV, P/E, P/B, Turnover); US investors. © 2026 Invesco Ltd. Document ref: INVGROWTH-FACT-1 | 03/26.</p>
+                <h3>14. Summary for Report</h3>
+                <p>The Invesco Concept Factsheet is a four-page Figma prototype of a fund factsheet for Invesco Global Growth Fund (Class A - USD). It demonstrates layout and content for cover/summary metrics, performance vs MSCI ACWI, top 10 holdings, portfolio and risk metrics, asset class and geographic/sector/currency/credit/maturity breakdowns, manager commentary, fund details, and full legal/disclosure text. Useful as a reference for factsheet structure, data visualisation, and compliance wording.</p>
+              </div>
+            </div>
+          </details>
+        </div>
+      </article>
+      <article id="kleen" class="card">
+        <div class="card-image">
+          <span class="dummy" style="background: linear-gradient(135deg, #84cc16 0%, #65a30d 100%);"></span>
+        </div>
+        <div class="card-body">
+          <h2>Kleen</h2>
+          <p class="card-desc">InDesign script. Cleanup: empty frames, unused styles/swatches, hidden objects, overrides, duplicate swatches. Checklist + Unused/Duplicates views; save/load presets. One undo reverts all.</p>
+          <p class="card-example">e.g. Before final delivery or archive: remove empties and duplicates so file is lean and consistent.</p>
+          <a class="card-link" href="#">Kleen.jsx <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7h-8M17 7v8"/></svg></a>
+          <div class="card-images-wrap">
+            <div class="report-images-grid">
+              <div class="report-image-placeholder" data-report-image="kleen-1" aria-label="Image 1"><img src="Q1 Report on Initiatives Work/Kleen_01.png" alt="Kleen 1" loading="lazy" /></div>
+              <div class="report-image-placeholder" data-report-image="kleen-2" aria-label="Image 2"><img src="Q1 Report on Initiatives Work/Kleen_02.png" alt="Kleen 2" loading="lazy" /></div>
+              <div class="report-image-placeholder" data-report-image="kleen-3" aria-label="Image 3"><img src="Q1 Report on Initiatives Work/Kleen_03.png" alt="Kleen 3" loading="lazy" /></div>
+              <div class="report-image-placeholder" data-report-image="kleen-4" aria-label="Image 4"><img src="Q1 Report on Initiatives Work/Kleen_04.png" alt="Kleen 4" loading="lazy" /></div>
+              <div class="report-image-placeholder" data-report-image="kleen-5" aria-label="Image 5"><img src="Q1 Report on Initiatives Work/Kleen_05.png" alt="Kleen 5" loading="lazy" /></div>
+              <div class="report-image-placeholder" data-report-image="kleen-6" aria-label="Image 6"><img src="Q1 Report on Initiatives Work/Kleen_06.png" alt="Kleen 6" loading="lazy" /></div>
+              <div class="report-image-placeholder" data-report-image="kleen-7" aria-label="Image 7"><img src="Q1 Report on Initiatives Work/Kleen_07.png" alt="Kleen 7" loading="lazy" /></div>
+              <div class="report-image-placeholder" data-report-image="kleen-8" aria-label="Image 8"><img src="Q1 Report on Initiatives Work/Kleen_08.png" alt="Kleen 8" loading="lazy" /></div>
+              <div class="report-image-placeholder" data-report-image="kleen-9" aria-label="Image 9"><img src="Q1 Report on Initiatives Work/Kleen_09.png" alt="Kleen 9" loading="lazy" /></div>
+              <div class="report-image-placeholder" data-report-image="kleen-10" aria-label="Image 10"><img src="Q1 Report on Initiatives Work/Kleen_010.png" alt="Kleen 10" loading="lazy" /></div>
+              <div class="report-image-placeholder" data-report-image="kleen-11" aria-label="Image 11"><img src="Q1 Report on Initiatives Work/Kleen_011.png" alt="Kleen 11" loading="lazy" /></div>
+            </div>
+          </div>
+          <div class="card-item-stats">
+            <div class="card-item-stat"><div class="card-item-stat-value">~4–5 h</div><div class="card-item-stat-label">Time saved per document</div></div>
+            <div class="card-item-stat"><div class="card-item-stat-value">~5–15×</div><div class="card-item-stat-label">Speed (report)</div></div>
+            <div class="card-item-stat"><div class="card-item-stat-value">Document cleanup</div><div class="card-item-stat-label">Primary use</div></div>
+          </div>
+          <details class="card-dropdown">
+            <summary>Full report</summary>
+            <div class="report-inner">
+              <div class="report-full">
+                <h3>1. Overview</h3>
+                <p><strong>Kleen</strong> is an InDesign <strong>document cleanup script</strong> that removes clutter and inconsistencies in a single run. It targets empty frames, unused styles and swatches, hidden objects, local overrides, and duplicate swatches. The script offers a checklist so you choose which actions to run, plus Unused and Duplicates views to review items before applying. Optional save/load presets support repeated cleanup workflows. One undo reverts the entire run.</p>
+                <h3>2. What Kleen Cleans</h3>
+                <table><tr><th>Target</th><th>Description</th></tr><tr><td>Empty frames</td><td>Frames with no content (graphic or text)</td></tr><tr><td>Unused styles</td><td>Paragraph, character, object, table, and cell styles not applied in the document</td></tr><tr><td>Unused swatches</td><td>Color swatches not used by any object, style, or table</td></tr><tr><td>Hidden objects</td><td>Objects on the pasteboard or set to hidden</td></tr><tr><td>Overrides</td><td>Local formatting overrides (e.g. on paragraph or character style)</td></tr><tr><td>Duplicate swatches</td><td>Swatches that match existing colors; can merge into one</td></tr></table>
+                <h3>3. How It Works</h3>
+                <p><strong>Checklist:</strong> Enable or disable each cleanup type. <strong>Unused view:</strong> Lists unused styles/swatches before deletion. <strong>Duplicates view:</strong> Lists duplicate swatches and target for merge. <strong>Run:</strong> Executes only checked actions. <strong>Undo:</strong> One InDesign Undo reverts the full Kleen run. <strong>Presets:</strong> Save checklist state and reload (e.g. “Pre-delivery”, “Template cleanup”).</p>
+                <h3>4. When to Use</h3>
+                <p>Before final delivery or archive; after major edits; template hygiene. With Find Unused Styles: Kleen can remove unused styles; Find Unused Styles is style-focused and explicit. Use both as needed.</p>
+                <h3>5. Time Savings & Speed</h3>
+                <p>Estimated time savings: ~20–60 min per document. Approx. speed increase: ~5–15× (one cleanup run vs many manual steps).</p>
+                <h3>6. Summary for Report</h3>
+                <p>Kleen automates InDesign document cleanup. A checklist and Unused/Duplicates views give control over what is removed or merged; one undo reverts all. Use for pre-delivery, post-edit, and template hygiene. Complements Find Unused Styles for style-only cleanup.</p>
+              </div>
+              <details class="script-dropdown">
+                <summary>Script code (.jsx)</summary>
+                <pre><code>// Kleen — InDesign document cleanup script
+// Add Kleen.jsx to this project to display script code here.
+// Script location: Scripts folder / New Scripts/Kleen/Kleen.jsx</code></pre>
+              </details>
+            </div>
+          </details>
+        </div>
+      </article>
+      <article id="ktool-brand-control" class="card">
+        <div class="card-image">
+          <span class="dummy" style="background: linear-gradient(135deg, #8b5cf6 0%, #5b21b6 100%);"></span>
+        </div>
+        <div class="card-body">
+          <h2>KTool — Brand Control</h2>
+          <p class="card-desc">Central design-system and brand governance. Colors, typography, spacing, borders, shadows, animation, layout, data viz. Component library (Navigation, Forms, Content, Feedback, Data Viz, etc.). Save, Reset, Export, Import.</p>
+          <p class="card-example">e.g. Rolling out new brand palette and checking all navigation and form components in one place.</p>
+          <a class="card-link" href="https://chisel-rouge-37767861.figma.site/" target="_blank" rel="noopener">Open KTool Brand Control <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7h-8M17 7v8"/></svg></a>
+          <div class="card-images-wrap">
+            <div class="report-images-grid">
+              <div class="report-image-placeholder" data-report-image="ktool-brand-1" aria-label="Image 1"><img src="Q1 Report on Initiatives Work/KTool-BrandController_01.png" alt="KTool Brand Control 1" loading="lazy" /></div>
+              <div class="report-image-placeholder" data-report-image="ktool-brand-2" aria-label="Image 2"><img src="Q1 Report on Initiatives Work/KTool-BrandController_02.png" alt="KTool Brand Control 2" loading="lazy" /></div>
+            </div>
+          </div>
+          <div class="card-item-stats">
+            <div class="card-item-stat"><div class="card-item-stat-value">~4–6 h</div><div class="card-item-stat-label">Time saved per brand/theme update</div></div>
+            <div class="card-item-stat"><div class="card-item-stat-value">8</div><div class="card-item-stat-label">Control panels (report)</div></div>
+            <div class="card-item-stat"><div class="card-item-stat-value">Component library</div><div class="card-item-stat-label">Primary use</div></div>
+          </div>
+          <details class="card-dropdown">
+            <summary>Full report</summary>
+            <div class="report-inner">
+              <div class="report-full">
+                <h3>1. Overview</h3>
+                <p><strong>KTool - Brand Control</strong> is a design-system and brand governance tool for <strong>Kurtosys</strong>. It provides centralised control of brand colours, typography, spacing, borders, shadows, animation, layout, and data visualisation, with a <strong>Component Library</strong> that previews UI components using the active brand design system. Actions include Save, Reset, Export, and Import for sharing or versioning the system.</p>
+                <h3>2. Control Panels (Tabs)</h3>
+                <table><tr><th>Tab</th><th>Purpose</th></tr><tr><td>Colors</td><td>Brand, surface, text, semantic, and form colours</td></tr><tr><td>Typography</td><td>Type scale and text styles</td></tr><tr><td>Spacing</td><td>Spacing scale and layout spacing</td></tr><tr><td>Borders</td><td>Border width, radius, and style</td></tr><tr><td>Shadows</td><td>Elevation and shadow tokens</td></tr><tr><td>Animation</td><td>Motion and transition tokens</td></tr><tr><td>Layout</td><td>Grid, breakpoints, and layout rules</td></tr><tr><td>Data Viz</td><td>Charts and data visualisation tokens</td></tr></table>
+                <h3>3. Color System</h3>
+                <p><strong>Brand:</strong> Primary, Primary Hover, Secondary, Secondary Hover, Accent, Accent Hover. <strong>Surface:</strong> Background, Surface, Surface Hover, Border. <strong>Text:</strong> Text, Text Secondary, Text Inverse. <strong>Semantic:</strong> Success, Warning, Error, Info. <strong>Form:</strong> Checkbox Border, Checkbox Active, Radio Border, Radio Active.</p>
+                <h3>4. Component Library</h3>
+                <table><tr><th>Category</th><th>Count</th><th>Examples</th></tr><tr><td>Navigation</td><td>8</td><td>Navbar, Sidebar, Breadcrumbs, Tabs, Dropdown, Pagination, Stepper, Mobile Menu</td></tr><tr><td>Forms</td><td>12</td><td>(Refer to tool)</td></tr><tr><td>Content</td><td>10</td><td>(Refer to tool)</td></tr><tr><td>Feedback</td><td>7</td><td>(Refer to tool)</td></tr><tr><td>Data Visualization</td><td>6</td><td>(Refer to tool)</td></tr><tr><td>Layout</td><td>5</td><td>(Refer to tool)</td></tr><tr><td>App Components</td><td>12</td><td>(Refer to tool)</td></tr><tr><td>Asset & Investment</td><td>15</td><td>(Refer to tool)</td></tr></table>
+                <h3>5. Actions & Persistence</h3>
+                <p>Save — Persist current brand settings. Reset — Revert to a previous or default state. Export — Export the design system. Import — Load an existing design-system export.</p>
+                <h3>6. Summary for Report</h3>
+                <p>KTool - Brand Control provides a single place to define and adjust the Kurtosys brand design system (colours, typography, spacing, borders, shadows, animation, layout, and data viz). The Component Library shows navigation, forms, content, feedback, data visualisation, layout, app, and asset/investment components with the current tokens applied. Use alongside the Font Unit & Accessibility Checker for type scale and WCAG alignment.</p>
+              </div>
+            </div>
+          </details>
+        </div>
+      </article>
+    </main>
+
+    <section class="bottom-section">
+      <p class="explainer">The initiatives above are still in development and testing phases but have already yielded time savings in pilot use. Peer review is underway, and usage stats could become more targeted and clear in the coming weeks of Q2 as we isolate and consider other items for development to speed up report design.</p>
+      <div class="link-lists">
+        <div class="link-list">
+          <h4>Initiatives (jump to)</h4>
+          <ul>
+            <li><a href="#feature-automation-suggestions">Feature Automation Suggestions</a></li>
+            <li><a href="#figma-styles-to-indesign">Figma Styles to InDesign</a></li>
+            <li><a href="#font-unit-accessibility-checker">Font Unit &amp; Accessibility Checker</a></li>
+            <li><a href="#invesco-concept-factsheet">Invesco Concept Factsheet Figma Make</a></li>
+            <li><a href="#kleen">Kleen</a></li>
+            <li><a href="#ktool-brand-control">KTool — Brand Control</a></li>
+          </ul>
+        </div>
+        <div class="link-list">
+          <h4>External links</h4>
+          <ul>
+            <li><a href="https://bridge-dull-12878727.figma.site/" target="_blank" rel="noopener">Font Unit &amp; Accessibility Checker</a></li>
+            <li><a href="https://chisel-rouge-37767861.figma.site/" target="_blank" rel="noopener">KTool Brand Control</a></li>
+            <li><a href="https://middle-markup-58597903.figma.site/" target="_blank" rel="noopener">Invesco Concept Factsheet</a></li>
+            <li><a href="https://bleak-clever-17464714.figma.site/" target="_blank" rel="noopener">Feature Automation Suggestions</a></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      Q1 Initiatives — Tools & Solutions Summary. Customize “Example area of usage” per role. Update time savings as you measure use.
+    </footer>
+  </div>
+
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Image lightbox">
+    <div class="lightbox-content">
+      <div id="lightbox-image-wrap"></div>
+    </div>
+    <div class="lightbox-ui">
+      <span class="lightbox-title" id="lightbox-title"></span>
+      <span class="lightbox-count" id="lightbox-count"></span>
+      <div class="lightbox-nav">
+        <button type="button" id="lightbox-prev" aria-label="Previous">Previous</button>
+        <button type="button" id="lightbox-next" aria-label="Next">Next</button>
+      </div>
+      <button type="button" class="lightbox-close" id="lightbox-close" aria-label="Close">×</button>
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    var theme = localStorage.getItem("q1-theme") || "dark";
+    var root = document.documentElement;
+    var toggle = document.getElementById("theme-toggle");
+    function setTheme(t) {
+      theme = t;
+      root.setAttribute("data-theme", theme === "light" ? "light" : "dark");
+      localStorage.setItem("q1-theme", theme);
+      toggle.setAttribute("aria-checked", theme === "light" ? "true" : "false");
+    }
+    root.setAttribute("data-theme", theme === "light" ? "light" : "dark");
+    toggle.setAttribute("aria-checked", theme === "light" ? "true" : "false");
+    toggle.addEventListener("click", function() { setTheme(theme === "light" ? "dark" : "light"); });
+  })();
+  (function() {
+    var lb = document.getElementById("lightbox");
+    var titleEl = document.getElementById("lightbox-title");
+    var countEl = document.getElementById("lightbox-count");
+    var wrapEl = document.getElementById("lightbox-image-wrap");
+    var closeBtn = document.getElementById("lightbox-close");
+    var prevBtn = document.getElementById("lightbox-prev");
+    var nextBtn = document.getElementById("lightbox-next");
+    var currentGallery = [];
+    var currentIndex = 0;
+    function openLightbox(card, index) {
+      var grid = card.querySelector(".report-images-grid");
+      if (!grid) return;
+      var cells = [].slice.call(grid.querySelectorAll(".report-image-placeholder"));
+      currentGallery = cells;
+      currentIndex = Math.min(Math.max(0, index), cells.length - 1);
+      var toolTitle = card.querySelector("h2");
+      titleEl.textContent = toolTitle ? toolTitle.textContent : "Image";
+      showSlide();
+      lb.classList.add("is-open");
+    }
+    function showSlide() {
+      countEl.textContent = currentIndex + 1 + " of " + currentGallery.length;
+      var cell = currentGallery[currentIndex];
+      wrapEl.innerHTML = "";
+      var img = cell.querySelector("img");
+      if (img && img.src) {
+        var clone = img.cloneNode(true);
+        clone.style.maxWidth = "100%";
+        clone.style.maxHeight = "70vh";
+        wrapEl.appendChild(clone);
+      } else {
+        var div = document.createElement("div");
+        div.className = "report-image-placeholder";
+        div.style.minWidth = "280px";
+        div.style.minHeight = "160px";
+        div.textContent = cell.textContent || "Image placeholder";
+        wrapEl.appendChild(div);
+      }
+      prevBtn.style.visibility = currentGallery.length > 1 ? "visible" : "hidden";
+      nextBtn.style.visibility = currentGallery.length > 1 ? "visible" : "hidden";
+    }
+    function closeLightbox() { lb.classList.remove("is-open"); }
+    function next() {
+      if (currentGallery.length <= 1) return;
+      currentIndex = (currentIndex + 1) % currentGallery.length;
+      showSlide();
+    }
+    function prev() {
+      if (currentGallery.length <= 1) return;
+      currentIndex = (currentIndex - 1 + currentGallery.length) % currentGallery.length;
+      showSlide();
+    }
+    document.querySelectorAll(".card").forEach(function(card) {
+      var grid = card.querySelector(".report-images-grid");
+      if (!grid) return;
+      [].slice.call(grid.querySelectorAll(".report-image-placeholder")).forEach(function(ph, i) {
+        ph.setAttribute("data-index", i);
+        ph.setAttribute("role", "button");
+        ph.setAttribute("tabindex", "0");
+        ph.addEventListener("click", function() { openLightbox(card, i); });
+        ph.addEventListener("keydown", function(e) {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openLightbox(card, i); }
+        });
+      });
+    });
+    closeBtn.addEventListener("click", closeLightbox);
+    prevBtn.addEventListener("click", prev);
+    nextBtn.addEventListener("click", next);
+    lb.addEventListener("click", function(e) { if (e.target === lb) closeLightbox(); });
+    document.addEventListener("keydown", function(e) {
+      if (!lb.classList.contains("is-open")) return;
+      if (e.key === "Escape") closeLightbox();
+      if (e.key === "ArrowLeft") prev();
+      if (e.key === "ArrowRight") next();
+    });
+  })();
+  </script>
+</body>
+</html>
