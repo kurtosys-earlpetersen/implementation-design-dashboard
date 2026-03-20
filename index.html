@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Implementation Design — Initiative Dashboard 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#f7f8fa;--bg2:#eef0f4;--surface:#ffffff;--surface2:#f8f9fb;--surface3:#eef0f4;
+  --border:#e0e4ec;--border2:#cdd3de;
+  --text:#1a1d26;--text2:#4a5068;--text3:#8690a6;
+  --primary:#0d9488;--primary-light:#ccfbf1;--primary-dim:rgba(13,148,136,.08);
+  --coral:#f97316;--coral-dim:rgba(249,115,22,.08);--coral-light:#fff7ed;
+  --emerald:#059669;--emerald-dim:rgba(5,150,105,.08);--emerald-light:#ecfdf5;
+  --violet:#7c3aed;--violet-dim:rgba(124,58,237,.08);--violet-light:#f5f3ff;
+  --blue:#2563eb;--blue-dim:rgba(37,99,235,.08);--blue-light:#eff6ff;
+  --rose:#e11d48;--rose-dim:rgba(225,29,72,.06);--rose-light:#fff1f2;
+  --amber:#d97706;--amber-dim:rgba(217,119,6,.08);--amber-light:#fffbeb;
+  --indigo:#4f46e5;--indigo-dim:rgba(79,70,229,.08);
+  --lime:#65a30d;--lime-dim:rgba(101,163,13,.08);
+  --font:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;
+  --radius:10px;--radius-lg:14px;--radius-xl:18px;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 4px 20px rgba(0,0,0,.04);
+  --shadow-lg:0 4px 32px rgba(0,0,0,.08);
+  --transition:all .25s cubic-bezier(.4,0,.2,1);
+}
+
+[data-theme="dark"]{
+  --bg:#0c0d10;--bg2:#131419;--surface:#1a1b22;--surface2:#1f2029;--surface3:#282a35;
+  --border:#2d2f3a;--border2:#3a3d4c;
+  --text:#eef0f6;--text2:#9ca3b8;--text3:#6b7289;
+  --primary:#2dd4bf;--primary-light:rgba(45,212,191,.1);--primary-dim:rgba(45,212,191,.1);
+  --coral:#fb923c;--coral-dim:rgba(251,146,60,.1);--coral-light:rgba(251,146,60,.08);
+  --emerald:#34d399;--emerald-dim:rgba(52,211,153,.1);--emerald-light:rgba(52,211,153,.08);
+  --violet:#a78bfa;--violet-dim:rgba(167,139,250,.1);--violet-light:rgba(167,139,250,.08);
+  --blue:#60a5fa;--blue-dim:rgba(96,165,250,.1);--blue-light:rgba(96,165,250,.08);
+  --rose:#fb7185;--rose-dim:rgba(251,113,133,.08);--rose-light:rgba(251,113,133,.06);
+  --amber:#fbbf24;--amber-dim:rgba(251,191,36,.1);--amber-light:rgba(251,191,36,.06);
+  --indigo:#818cf8;--indigo-dim:rgba(129,140,248,.1);
+  --lime:#a3e635;--lime-dim:rgba(163,230,53,.1);
+  --shadow:0 1px 3px rgba(0,0,0,.3),0 4px 20px rgba(0,0,0,.2);
+  --shadow-lg:0 4px 32px rgba(0,0,0,.4);
+}
+
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh;overflow-x:hidden;font-size:.9375rem}
+a{color:var(--primary);text-decoration:none}a:hover{text-decoration:underline}
+
+.dashboard{max-width:1440px;margin:0 auto;padding:0 2rem 4rem}
+
+/* ── Top bar ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:.875rem 0;position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border)}
+.topbar-brand{display:flex;align-items:center;gap:.625rem}
+.topbar-logo{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--primary),var(--violet));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.7rem;color:#fff}
+.topbar-title{font-size:.8125rem;font-weight:600;color:var(--text2)}
+.topbar-right{display:flex;gap:.75rem;align-items:center}
+.topbar-date{font-size:.6875rem;color:var(--text3);font-weight:500}
+.theme-btn{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1rem;transition:var(--transition)}
+.theme-btn:hover{border-color:var(--primary);color:var(--primary)}
+
+/* ── Hero ── */
+.hero{padding:3.5rem 0 2.5rem;position:relative}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:.375rem;padding:.3rem .75rem;border-radius:100px;background:var(--primary-dim);border:1px solid rgba(13,148,136,.15);font-size:.6875rem;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.06em;margin-bottom:1rem}
+.hero h1{font-size:clamp(1.75rem,4.5vw,2.75rem);font-weight:800;letter-spacing:-.03em;line-height:1.15;margin-bottom:.625rem}
+.hero-sub{font-size:1rem;color:var(--text2);max-width:640px;line-height:1.7;margin-bottom:1.5rem}
+.hero-principle{display:inline-flex;align-items:center;gap:.375rem;padding:.4rem .875rem;border-radius:var(--radius);background:var(--surface);border:1px solid var(--border);font-size:.8125rem;color:var(--text2);font-weight:500;box-shadow:var(--shadow)}
+.hero-principle strong{color:var(--primary)}
+
+/* ── Stats ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:.875rem;margin-bottom:2.5rem}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;position:relative;overflow:hidden;transition:var(--transition)}
+.stat-card:hover{border-color:var(--primary);box-shadow:var(--shadow)}
+.stat-card .sc-color{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;margin-bottom:.75rem}
+.stat-card .sc-val{font-size:1.5rem;font-weight:800;letter-spacing:-.02em;margin-bottom:.125rem}
+.stat-card .sc-lbl{font-size:.75rem;color:var(--text3);font-weight:500}
+.stat-card .sc-trend{display:inline-flex;align-items:center;gap:.2rem;font-size:.6875rem;font-weight:600;padding:.125rem .4rem;border-radius:100px;margin-top:.375rem}
+
+/* ── Sections ── */
+.section{margin-bottom:2.75rem}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem}
+.section-title{font-size:1.125rem;font-weight:700;letter-spacing:-.01em;display:flex;align-items:center;gap:.5rem}
+.sdot{width:8px;height:8px;border-radius:50%}
+.section-badge{font-size:.625rem;font-weight:700;padding:.2rem .5rem;border-radius:100px;text-transform:uppercase;letter-spacing:.05em}
+
+/* ── Objectives ── */
+.obj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.875rem}
+.obj-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.125rem;transition:var(--transition);border-left:3px solid var(--primary)}
+.obj-card:hover{box-shadow:var(--shadow);transform:translateY(-1px)}
+.obj-num{font-size:.625rem;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.375rem}
+.obj-text{font-size:.8125rem;color:var(--text);font-weight:500;line-height:1.55}
+
+/* ── Gantt ── */
+.gantt-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);padding:1.25rem;overflow-x:auto}
+.gantt-hdr{display:grid;grid-template-columns:260px repeat(9,1fr);gap:0;border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-bottom:.375rem;min-width:860px}
+.gantt-hdr span{font-size:.625rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;text-align:center;padding:0 .2rem}
+.gantt-hdr span:first-child{text-align:left}
+.gantt-row{display:grid;grid-template-columns:260px repeat(9,1fr);gap:0;align-items:center;padding:.375rem 0;border-bottom:1px solid var(--border);min-width:860px;transition:background .15s}
+.gantt-row:hover{background:var(--surface2)}
+.gantt-row:last-child{border-bottom:none}
+.gantt-lbl{display:flex;flex-direction:column;gap:.0625rem;padding-right:.75rem}
+.gantt-lbl-t{font-size:.75rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gantt-lbl-o{font-size:.625rem;color:var(--text3);font-weight:500}
+.gantt-lbl-h{font-size:.625rem;color:var(--primary);font-weight:700}
+.gantt-cell{position:relative;height:24px}
+.gantt-bar{position:absolute;height:24px;border-radius:5px;top:0;transition:var(--transition);min-width:6px}
+.gantt-bar:hover{filter:brightness(1.15);transform:scaleY(1.15)}
+.gantt-today{position:absolute;top:0;bottom:0;width:2px;background:var(--rose);z-index:5;opacity:.5}
+
+/* ── Chart cards ── */
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:900px){.charts-row{grid-template-columns:1fr}}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);padding:1.25rem}
+.chart-title{font-size:.875rem;font-weight:700;margin-bottom:1rem;display:flex;align-items:center;gap:.375rem}
+.donut-wrap{display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;justify-content:center}
+.donut-svg{width:180px;height:180px;flex-shrink:0}
+.donut-legend{display:flex;flex-direction:column;gap:.375rem}
+.legend-item{display:flex;align-items:center;gap:.375rem;font-size:.75rem;color:var(--text2)}
+.legend-dot{width:9px;height:9px;border-radius:3px;flex-shrink:0}
+.legend-val{font-weight:700;color:var(--text);margin-left:auto;padding-left:.75rem}
+
+/* ── Bar chart ── */
+.bar-chart{display:flex;flex-direction:column;gap:.5rem}
+.bar-row{display:flex;align-items:center;gap:.5rem}
+.bar-lbl{font-size:.6875rem;color:var(--text2);width:130px;flex-shrink:0;text-align:right;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-track{flex:1;height:24px;background:var(--surface3);border-radius:5px;overflow:hidden}
+.bar-fill{height:100%;border-radius:5px;transition:width 1s cubic-bezier(.4,0,.2,1);display:flex;align-items:center;padding:0 .4rem;min-width:fit-content}
+.bar-fill span{font-size:.625rem;font-weight:700;color:#fff;white-space:nowrap}
+.bar-val{font-size:.6875rem;font-weight:700;color:var(--text2);width:55px;text-align:right;flex-shrink:0}
+
+/* ── Radial ── */
+.radial-wrap{display:flex;align-items:center;justify-content:center;gap:1.5rem;flex-wrap:wrap;padding:.5rem 0}
+.radial{position:relative;width:110px;height:110px}
+.radial svg{transform:rotate(-90deg)}
+.radial-bg{fill:none;stroke:var(--surface3);stroke-width:7}
+.radial-fill{fill:none;stroke-width:7;stroke-linecap:round;transition:stroke-dashoffset 1.5s cubic-bezier(.4,0,.2,1)}
+.radial-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.radial-pct{font-size:1.125rem;font-weight:800}
+.radial-lbl{font-size:.5625rem;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;text-align:center;max-width:70px;line-height:1.3;margin-top:.125rem}
+
+/* ── Initiative cards ── */
+.init-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:1rem}
+@media(max-width:480px){.init-grid{grid-template-columns:1fr}}
+.init-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);overflow:hidden;transition:var(--transition)}
+.init-card:hover{border-color:var(--primary)}
+.init-card.expanded{grid-column:1/-1}
+.init-top{padding:1.25rem;cursor:pointer;user-select:none;position:relative}
+.init-top::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:3px 3px 0 0}
+.init-card[data-c="teal"] .init-top::before{background:linear-gradient(90deg,#0d9488,#2dd4bf)}
+.init-card[data-c="blue"] .init-top::before{background:linear-gradient(90deg,#2563eb,#60a5fa)}
+.init-card[data-c="emerald"] .init-top::before{background:linear-gradient(90deg,#059669,#34d399)}
+.init-card[data-c="amber"] .init-top::before{background:linear-gradient(90deg,#d97706,#fbbf24)}
+.init-card[data-c="rose"] .init-top::before{background:linear-gradient(90deg,#e11d48,#fb7185)}
+.init-card[data-c="violet"] .init-top::before{background:linear-gradient(90deg,#7c3aed,#a78bfa)}
+.init-card[data-c="indigo"] .init-top::before{background:linear-gradient(90deg,#4f46e5,#818cf8)}
+.init-card[data-c="lime"] .init-top::before{background:linear-gradient(90deg,#65a30d,#a3e635)}
+.init-card[data-c="coral"] .init-top::before{background:linear-gradient(90deg,#f97316,#fb923c)}
+.init-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem;margin-bottom:.5rem}
+.init-id{font-size:.625rem;font-weight:700;color:var(--primary);letter-spacing:.02em}
+.init-expand{width:26px;height:26px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.7rem;transition:var(--transition);flex-shrink:0}
+.init-expand:hover{border-color:var(--primary);color:var(--primary)}
+.init-card.expanded .init-expand{transform:rotate(180deg)}
+.init-name{font-size:.9375rem;font-weight:700;line-height:1.35;margin-bottom:.625rem;letter-spacing:-.005em}
+.init-meta{display:flex;flex-wrap:wrap;gap:.375rem;margin-bottom:.625rem}
+.m-chip{font-size:.625rem;font-weight:600;padding:.2rem .5rem;border-radius:100px;display:inline-flex;align-items:center;gap:.2rem}
+.m-chip.status{background:var(--blue-dim);color:var(--blue)}
+.m-chip.time{background:var(--amber-dim);color:var(--amber)}
+.m-chip.owner{background:var(--surface3);color:var(--text2)}
+.init-progress{margin-top:.375rem}
+.prog-track{height:5px;background:var(--surface3);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--primary),#2dd4bf);transition:width 1s ease}
+.prog-lbl{display:flex;justify-content:space-between;margin-top:.25rem;font-size:.625rem;color:var(--text3);font-weight:500}
+.init-body{max-height:0;overflow:hidden;transition:max-height .5s cubic-bezier(.4,0,.2,1),padding .3s ease}
+.init-card.expanded .init-body{max-height:3000px;padding:0 1.25rem 1.25rem}
+.init-body-inner{border-top:1px solid var(--border);padding-top:1rem}
+.body-sec{margin-bottom:1rem}
+.body-sec:last-child{margin-bottom:0}
+.body-sec h4{font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:.375rem;text-transform:uppercase;letter-spacing:.04em}
+.body-sec p,.body-sec li{font-size:.75rem;color:var(--text2);line-height:1.6}
+.body-sec ul{padding-left:1.125rem}
+.body-sec li{margin-bottom:.2rem}
+.mini-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:.5rem;margin-top:.625rem}
+.mini-stat{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:.625rem}
+.mini-stat .msv{font-size:.875rem;font-weight:800;color:var(--primary)}
+.mini-stat .msl{font-size:.625rem;color:var(--text3);margin-top:.0625rem}
+
+/* ── Q1 Work Section (from Christyn's report) ── */
+.work-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);overflow:hidden;transition:var(--transition);display:flex;flex-direction:row;width:100%;min-height:120px}
+.work-card:hover{box-shadow:var(--shadow-lg);border-color:var(--primary)}
+.work-accent{width:6px;min-width:6px;flex-shrink:0}
+.work-body{padding:1.25rem 1.5rem;flex:1;display:flex;flex-direction:column;min-width:0}
+.work-body h3{font-size:1.05rem;font-weight:700;margin:0 0 .375rem;line-height:1.35;letter-spacing:-.005em}
+.work-desc{font-size:.8125rem;color:var(--text2);line-height:1.6;margin-bottom:.625rem}
+.work-example{font-size:.75rem;color:var(--text3);font-style:italic;line-height:1.5;margin-bottom:.75rem}
+.work-link{display:inline-flex;align-items:center;gap:.25rem;font-size:.8125rem;font-weight:600;color:var(--primary);margin-top:auto}
+.work-link svg{width:13px;height:13px}
+.work-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.625rem;margin:.75rem 0}
+.ws{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:.5rem .75rem}
+.ws .wsv{font-size:.8125rem;font-weight:700;color:var(--primary);margin-bottom:.125rem}
+.ws .wsl{font-size:.625rem;color:var(--text3);line-height:1.3}
+.work-images{margin:.75rem 0 0;width:100%}
+.work-images-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.625rem;width:100%}
+@media(min-width:768px){.work-images-grid{grid-template-columns:repeat(4,1fr)}}
+@media(min-width:1024px){.work-images-grid{grid-template-columns:repeat(6,1fr)}}
+.wi-ph{aspect-ratio:16/10;background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:.625rem;text-align:center;padding:0;cursor:pointer;transition:var(--transition);overflow:hidden}
+.wi-ph:hover{border-color:var(--primary);box-shadow:var(--shadow)}
+.wi-ph img{width:100%;height:100%;object-fit:cover;border-radius:calc(var(--radius) - 1px);display:block}
+.work-dropdown{margin-top:.75rem;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.work-dropdown summary{padding:.5rem .75rem;font-size:.8125rem;font-weight:600;color:var(--primary);cursor:pointer;list-style:none;user-select:none;transition:background .15s}
+.work-dropdown summary:hover{background:var(--surface2)}
+.work-dropdown summary::-webkit-details-marker{display:none}
+.work-dropdown summary::before{content:"\25B6 ";font-size:.55rem;margin-right:.3rem}
+.work-dropdown[open] summary::before{content:"\25BC "}
+.work-dropdown .wd-inner{padding:.875rem 1rem;background:var(--bg);border-top:1px solid var(--border);max-height:60vh;overflow-y:auto}
+.rpt{font-size:.8125rem;color:var(--text2);line-height:1.6}
+.rpt h3{font-size:.875rem;font-weight:700;color:var(--text);margin:1rem 0 .3rem 0}
+.rpt h3:first-child{margin-top:0}
+.rpt p{margin:0 0 .4rem 0}
+.rpt ul,.rpt ol{margin:.2rem 0 .625rem 1.125rem;padding:0}
+.rpt table{width:100%;border-collapse:collapse;margin:.4rem 0 .75rem 0;font-size:.75rem}
+.rpt th,.rpt td{border:1px solid var(--border);padding:.3rem .4rem;text-align:left}
+.rpt th{color:var(--text);font-weight:600;background:var(--surface2)}
+
+/* ── Figma Make buttons ── */
+.figma-links{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1rem;margin-bottom:1.5rem}
+.figma-link-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;display:flex;align-items:center;gap:1rem;transition:var(--transition);text-decoration:none;color:var(--text)}
+.figma-link-card:hover{border-color:var(--primary);box-shadow:var(--shadow-lg);transform:translateY(-2px);text-decoration:none}
+.figma-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.figma-link-card .fl-title{font-size:.875rem;font-weight:700;margin-bottom:.125rem}
+.figma-link-card .fl-desc{font-size:.6875rem;color:var(--text3)}
+.figma-link-card .fl-arrow{margin-left:auto;color:var(--primary);font-size:1.25rem;flex-shrink:0}
+
+/* ── Impact cards ── */
+.impact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem}
+.impact-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);padding:1.25rem;position:relative;overflow:hidden}
+.impact-lbl{font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.625rem;display:flex;align-items:center;gap:.25rem}
+.impact-before,.impact-after{display:flex;align-items:baseline;gap:.375rem;margin-bottom:.25rem}
+.itag{font-size:.5625rem;font-weight:700;padding:.1rem .3rem;border-radius:3px;text-transform:uppercase;letter-spacing:.03em}
+.itag.b{background:var(--rose-dim);color:var(--rose)}
+.itag.a{background:var(--emerald-dim);color:var(--emerald)}
+.ival{font-size:1.125rem;font-weight:800}
+.impact-desc{font-size:.6875rem;color:var(--text3);line-height:1.5;margin-top:.375rem}
+
+/* ── Pipeline ── */
+.pipe-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.625rem}
+.pipe-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.875rem;text-align:center;transition:var(--transition)}
+.pipe-card:hover{border-color:var(--primary);transform:translateY(-1px)}
+.pipe-num{font-size:1.375rem;font-weight:800;margin-bottom:.125rem}
+.pipe-name{font-size:.6875rem;color:var(--text3);font-weight:500}
+
+/* ── Success criteria ── */
+.criteria-list{display:flex;flex-direction:column;gap:.375rem}
+.crit{display:flex;align-items:flex-start;gap:.625rem;padding:.625rem .875rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);transition:var(--transition)}
+.crit:hover{border-color:var(--primary)}
+.crit-chk{width:20px;height:20px;border-radius:5px;background:var(--emerald-dim);color:var(--emerald);display:flex;align-items:center;justify-content:center;font-size:.6875rem;font-weight:700;flex-shrink:0;margin-top:.125rem}
+.crit-txt{font-size:.75rem;color:var(--text2);line-height:1.5}
+
+/* ── Deep dive ── */
+.phase-card{padding:.875rem;border-radius:var(--radius);margin-bottom:.625rem}
+.phase-card:last-child{margin-bottom:0}
+.phase-num{font-size:.625rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.2rem}
+.phase-title{font-size:.8125rem;font-weight:700;color:var(--text);margin-bottom:.2rem}
+.phase-desc{font-size:.6875rem;color:var(--text3)}
+.problem-pill{padding:.625rem .875rem;border-radius:var(--radius);font-size:.75rem;font-weight:500;margin-bottom:.375rem}
+.problem-pill:last-child{margin-bottom:0}
+
+/* ── Lightbox ── */
+.lightbox{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.9);flex-direction:column;align-items:center;justify-content:center;padding:2rem 2rem 100px}
+.lightbox.is-open{display:flex}
+.lightbox-content{flex:1;width:100%;max-width:90vw;display:flex;align-items:center;justify-content:center;min-height:0}
+#lb-img-wrap img{max-width:100%;max-height:calc(100vh - 140px);object-fit:contain;border-radius:var(--radius);border:3px solid #fff}
+.lb-ui{position:fixed;bottom:0;left:0;right:0;display:flex;flex-direction:column;align-items:center;padding:.75rem 1rem 1rem;background:rgba(0,0,0,.95);gap:.375rem;z-index:10000}
+.lb-title{color:#fff;font-size:.875rem;font-weight:600;text-align:center}
+.lb-count{color:#aaa;font-size:.75rem}
+.lb-nav{display:flex;gap:.75rem}
+.lb-nav button,.lb-close{background:#222;border:1px solid #444;color:#fff;padding:.375rem .75rem;border-radius:var(--radius);cursor:pointer;font-size:.8125rem;font-family:var(--font)}
+.lb-close{width:32px;height:32px;border-radius:50%;padding:0;display:flex;align-items:center;justify-content:center;font-size:1.125rem;margin-top:.125rem}
+.lb-nav button:hover,.lb-close:hover{border-color:var(--primary);color:var(--primary)}
+
+/* ── Reveal ── */
+.reveal{opacity:0;transform:translateY(20px);transition:opacity .5s ease,transform .5s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+/* ── Footer ── */
+.dash-footer{text-align:center;padding:1.5rem 0;border-top:1px solid var(--border);margin-top:2.5rem;color:var(--text3);font-size:.75rem}
+
+/* ── Responsive ── */
+@media(max-width:640px){
+  .dashboard{padding:0 1rem 3rem}
+  .hero h1{font-size:1.625rem}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .init-grid{grid-template-columns:1fr}
+  .work-card{flex-direction:column;min-height:0}
+  .work-accent{width:100%;min-width:100%;height:4px}
+  .work-images-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media print{.topbar,.theme-btn{display:none!important}body{background:#fff;color:#000}}
+</style>
+</head>
+<body>
+<div class="dashboard">
+
+<!-- Topbar -->
+<nav class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-logo">ID</div>
+    <span class="topbar-title">Implementation Design — Kurtosys</span>
+  </div>
+  <div class="topbar-right">
+    <span class="topbar-date">Q1 2026 Report &middot; 20 Mar 2026</span>
+    <button class="theme-btn" id="themeToggle" title="Toggle theme">&#9681;</button>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-eyebrow">&#9670; Epic &middot; K2-Initiatives-2026</div>
+  <h1>Designers are designed to design</h1>
+  <p class="hero-sub">Defining measurement based on <strong>Implementation Design</strong> — Operating Model, Standardisation, and Automation to Reduce Delivery Time. Improving how Design supports delivery across reporting and digital workstreams.</p>
+  <div class="hero-principle">Guiding Principle: <strong>"Reduce friction, not just steps."</strong></div>
+</section>
+
+<!-- Stats -->
+<section class="stats-grid reveal">
+  <div class="stat-card"><div class="sc-color" style="background:var(--primary-dim);color:var(--primary)">&#9881;</div><div class="sc-val" style="color:var(--primary)">8</div><div class="sc-lbl">Active Initiatives</div><div class="sc-trend" style="background:var(--emerald-dim);color:var(--emerald)">All In Progress</div></div>
+  <div class="stat-card"><div class="sc-color" style="background:var(--violet-dim);color:var(--violet)">&#128101;</div><div class="sc-val" style="color:var(--violet)">6</div><div class="sc-lbl">Team Members</div><div class="sc-trend" style="background:var(--violet-dim);color:var(--violet)">Cross-functional</div></div>
+  <div class="stat-card"><div class="sc-color" style="background:var(--amber-dim);color:var(--amber)">&#9201;</div><div class="sc-val" style="color:var(--amber)">460h</div><div class="sc-lbl">Total Hours Allocated</div><div class="sc-trend" style="background:var(--amber-dim);color:var(--amber)">Jan – Sep 2026</div></div>
+  <div class="stat-card"><div class="sc-color" style="background:var(--emerald-dim);color:var(--emerald)">&#9889;</div><div class="sc-val" style="color:var(--emerald)">105</div><div class="sc-lbl">Automation Ideas Logged</div><div class="sc-trend" style="background:var(--emerald-dim);color:var(--emerald)">37 High Priority</div></div>
+  <div class="stat-card"><div class="sc-color" style="background:var(--blue-dim);color:var(--blue)">&#128200;</div><div class="sc-val" style="color:var(--blue)">12</div><div class="sc-lbl">Tools & Scripts Built</div><div class="sc-trend" style="background:var(--blue-dim);color:var(--blue)">Saving 4–12h/workflow</div></div>
+  <div class="stat-card"><div class="sc-color" style="background:var(--coral-dim);color:var(--coral)">&#127919;</div><div class="sc-val" style="color:var(--coral)">7</div><div class="sc-lbl">Strategic Objectives</div><div class="sc-trend" style="background:var(--coral-dim);color:var(--coral)">Aligned to delivery</div></div>
+</section>
+
+<!-- Objectives -->
+<section class="section reveal">
+  <div class="section-head"><h2 class="section-title"><span class="sdot" style="background:var(--primary)"></span> Strategic Objectives</h2><span class="section-badge" style="background:var(--emerald-dim);color:var(--emerald)">Target Outcomes</span></div>
+  <div class="obj-grid">
+    <div class="obj-card"><div class="obj-num">Objective 01</div><div class="obj-text">Reduce implementation cycle time by minimising unnecessary handovers and rework</div></div>
+    <div class="obj-card" style="border-left-color:var(--blue)"><div class="obj-num" style="color:var(--blue)">Objective 02</div><div class="obj-text">Clearly define Design vs PC responsibilities and expectations</div></div>
+    <div class="obj-card" style="border-left-color:var(--coral)"><div class="obj-num" style="color:var(--coral)">Objective 03</div><div class="obj-text">Establish a consistent discovery approach and standardised template foundation</div></div>
+    <div class="obj-card" style="border-left-color:var(--amber)"><div class="obj-num" style="color:var(--amber)">Objective 04</div><div class="obj-text">Increase automation usage and platform tool adoption to improve speed and quality</div></div>
+    <div class="obj-card" style="border-left-color:var(--violet)"><div class="obj-num" style="color:var(--violet)">Objective 05</div><div class="obj-text">Improve team resilience through cross-training and role clarity</div></div>
+    <div class="obj-card" style="border-left-color:var(--emerald)"><div class="obj-num" style="color:var(--emerald)">Objective 06</div><div class="obj-text">Embed accessibility standards into the process and automation workflow</div></div>
+    <div class="obj-card" style="border-left-color:var(--rose)"><div class="obj-num" style="color:var(--rose)">Objective 07</div><div class="obj-text">Implement the new working model and measure impact metrics to understand reduction in design-related issues</div></div>
+  </div>
+</section>
+
+<!-- Timeline -->
+<section class="section reveal">
+  <div class="section-head"><h2 class="section-title"><span class="sdot" style="background:var(--violet)"></span> Initiative Timeline</h2><span class="section-badge" style="background:var(--violet-dim);color:var(--violet)">Jan – Sep 2026</span></div>
+  <div class="gantt-wrap">
+    <div class="gantt-hdr"><span>Initiative</span><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span></div>
+    <div id="ganttBody"></div>
+  </div>
+</section>
+
+<!-- Charts -->
+<section class="section reveal">
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-title"><span class="sdot" style="background:var(--emerald)"></span> Team Hour Allocation</div>
+      <div class="donut-wrap"><svg class="donut-svg" viewBox="0 0 200 200" id="donut"></svg><div class="donut-legend" id="donutLeg"></div></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title"><span class="sdot" style="background:var(--amber)"></span> Quarterly Workload</div>
+      <div class="radial-wrap" id="radials"></div>
+    </div>
+  </div>
+</section>
+
+<!-- All 8 Initiatives -->
+<section class="section reveal">
+  <div class="section-head"><h2 class="section-title"><span class="sdot" style="background:var(--blue)"></span> Initiative Details</h2><span class="section-badge" style="background:var(--blue-dim);color:var(--blue)">8 Stories</span></div>
+  <div class="init-grid" id="initGrid"></div>
+</section>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- CHRISTYN'S Q1 WORK — Automation & Platform Tools    -->
+<!-- ════════════════════════════════════════════════════ -->
+<section class="section reveal">
+  <div class="section-head"><h2 class="section-title"><span class="sdot" style="background:var(--emerald)"></span> Q1 Work — Automation & Platform Tools</h2><span class="section-badge" style="background:var(--emerald-dim);color:var(--emerald)">K2-9228 &middot; Christyn Pienaar</span></div>
+  <p style="font-size:.8125rem;color:var(--text2);margin-bottom:1.25rem;max-width:72ch;line-height:1.7">Tools &amp; solutions summary — design system, accessibility, document automation, and InDesign workflows. Cross collaborative iteration and tooling solutions. The initiatives below are in development and testing phases and have already yielded time savings in pilot use.</p>
+
+  <!-- Figma Make Links -->
+  <div class="figma-links">
+    <a class="figma-link-card" href="https://www.figma.com/make/KjF9U5qOaeZtYArcZH11TL/Font-Unit---Accessibility-Checker" target="_blank" rel="noopener">
+      <div class="figma-icon" style="background:var(--emerald-light);color:var(--emerald)">&#9855;</div>
+      <div><div class="fl-title">Font Unit &amp; Accessibility Checker</div><div class="fl-desc">Figma Make &middot; Dynamic type scale &amp; WCAG 2.1</div></div>
+      <span class="fl-arrow">&rarr;</span>
+    </a>
+    <a class="figma-link-card" href="https://www.figma.com/make/TlMZk5mCw34cQzCgaolxhQ/Standard-Document-Design-Template-Creator" target="_blank" rel="noopener">
+      <div class="figma-icon" style="background:var(--blue-light);color:var(--blue)">&#128196;</div>
+      <div><div class="fl-title">Standard Document Design Template Creator</div><div class="fl-desc">Figma Make &middot; Template standardisation tool</div></div>
+      <span class="fl-arrow">&rarr;</span>
+    </a>
+  </div>
+
+  <!-- Summary stats -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:1.5rem">
+    <div class="stat-card" style="text-align:center"><div class="sc-val" style="color:var(--primary);font-size:1.25rem">~4–12 h</div><div class="sc-lbl">Avg. time saved per workflow</div></div>
+    <div class="stat-card" style="text-align:center"><div class="sc-val" style="color:var(--coral);font-size:1.25rem">6</div><div class="sc-lbl">Initiatives in review</div></div>
+    <div class="stat-card" style="text-align:center"><div class="sc-val" style="color:var(--violet);font-size:1.25rem">4–12 h</div><div class="sc-lbl">Time-savings range per workflow</div></div>
+  </div>
+
+  <!-- Work cards -->
+  <div style="display:flex;flex-direction:column;gap:1rem" id="workGrid">
+
+    <!-- 1. Feature Automation Suggestions -->
+    <article class="work-card" id="w-feature-auto">
+      <div class="work-accent" style="background:linear-gradient(180deg,#0891b2,#06b6d4)"></div>
+      <div class="work-body">
+        <h3>Feature Automation Suggestions</h3>
+        <p class="work-desc">Backlog of 105 script/automation ideas across 13 categories: Figma–InDesign, investment reporting, charts &amp; tables, graphics, typography, QA, document structure, export. Each has priority, time-savings estimate, tech (UXP, ExtendScript, SFI SDK), and status.</p>
+        <p class="work-example">e.g. Prioritising next automation; aligning with existing tools; capacity and roadmap planning.</p>
+        <a class="work-link" href="https://bleak-clever-17464714.figma.site/" target="_blank" rel="noopener">Open Feature Automation Suggestions <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7h-8M17 7v8"/></svg></a>
+        <div class="work-images"><div class="work-images-grid">
+          <div class="wi-ph"><img src="Q1 Report on Initiatives Work/FeatureAutomationSuggestions_01.png" alt="Feature Automation 1" loading="lazy"/></div>
+          <div class="wi-ph"><img src="Q1 Report on Initiatives Work/FeatureAutomationSuggestions_02.png" alt="Feature Automation 2" loading="lazy"/></div>
+          <div class="wi-ph"><img src="Q1 Report on Initiatives Work/FeatureAutomationSuggestions_03.png" alt="Feature Automation 3" loading="lazy"/></div>
+          <div class="wi-ph"><img src="Q1 Report on Initiatives Work/FeatureAutomationSuggestions_04.png" alt="Feature Automation 4" loading="lazy"/></div>
+        </div></div>
+        <div class="work-stats"><div class="ws"><div class="wsv">Roadmap</div><div class="wsl">Time savings</div></div><div class="ws"><div class="wsv">37</div><div class="wsl">High-priority items</div></div><div class="ws"><div class="wsv">13</div><div class="wsl">Categories</div></div></div>
+        <details class="work-dropdown"><summary>Full report</summary><div class="wd-inner"><div class="rpt">
+          <h3>1. Overview</h3><p>The site presents a <strong>backlog of 105 script/automation ideas</strong> for design and production workflows, with <strong>37 high-priority</strong> items and <strong>13 categories</strong>. Each idea includes a title, priority (High / Medium / Low), description, category, estimated time savings, technology (UXP Plugin, ExtendScript, SFI SDK, etc.), and status.</p>
+          <h3>2. Summary Counts</h3><table><tr><th>Metric</th><th>Value</th></tr><tr><td>Total script ideas</td><td>105</td></tr><tr><td>High priority</td><td>37</td></tr><tr><td>Categories</td><td>13</td></tr></table>
+          <h3>3. Categories</h3><table><tr><th>Category</th><th>Focus</th></tr><tr><td>Figma-InDesign Integration</td><td>Design-to-production; style extraction and import</td></tr><tr><td>Investment Reporting</td><td>Financial data validation, Excel/CSV linking, GIPS compliance, factsheet data binding</td></tr><tr><td>Chart &amp; Table Automation</td><td>Smart Table Styler, table-to-chart, conditional formatting, auto-resize</td></tr><tr><td>Graphic &amp; Image</td><td>Batch replacement, resolution validator, frame fitting, QR/barcode</td></tr><tr><td>Typography &amp; Text</td><td>Text cleanup, paragraph style analyser, footnotes, find/replace</td></tr><tr><td>Quality Control</td><td>Version comparison, preflight, overset detector, accessibility checker</td></tr><tr><td>Document Structure</td><td>TOC generator, hyperlink manager, bookmark/section, document merge</td></tr><tr><td>Export &amp; Output</td><td>PDF export preset manager, batch PDF exporter, print package assembler</td></tr><tr><td>Interactive &amp; Other</td><td>Interactive PDF elements and further ideas</td></tr></table>
+          <h3>4. Sample High-Priority Ideas</h3><table><tr><th>#</th><th>Title</th><th>Priority</th><th>Time savings</th><th>Tech</th></tr><tr><td>0</td><td>Figma Styles to InDesign Extractor</td><td>High</td><td>5–8 h</td><td>UXP, Figma API</td></tr><tr><td>1</td><td>Financial Data Validator</td><td>High</td><td>3–5 h</td><td>UXP, SFI SDK</td></tr><tr><td>8</td><td>Factsheet Data Binding</td><td>High</td><td>3–5 h</td><td>UXP, SFI SDK</td></tr><tr><td>16</td><td>Smart Table Styler</td><td>High</td><td>2–3 h</td><td>ExtendScript</td></tr><tr><td>46</td><td>Spelling &amp; Grammar Plus</td><td>High</td><td>2–3 h</td><td>UXP</td></tr><tr><td>67</td><td>Batch PDF Exporter</td><td>High</td><td>2–4 h</td><td>UXP</td></tr></table>
+        </div></div></details>
+      </div>
+    </article>
+
+    <!-- 2. Figma Styles to InDesign -->
+    <article class="work-card" id="w-figma-styles">
+      <div class="work-accent" style="background:linear-gradient(180deg,#2563eb,#3b82f6)"></div>
+      <div class="work-body">
+        <h3>Figma Styles to InDesign</h3>
+        <p class="work-desc">Figma plugin + InDesign script. Exports paragraph, character, color, and effect styles from Figma (JSON or .jsx) and imports into InDesign. Merge when updating so styles refresh without duplication.</p>
+        <p class="work-example">e.g. Pushing brand refresh from Figma into InDesign templates for factsheets and marketing.</p>
+        <a class="work-link" href="#">Scripts folder &rarr; FigmaStylesToInDesign.jsx <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7h-8M17 7v8"/></svg></a>
+        <div class="work-images"><div class="work-images-grid">
+          <div class="wi-ph"><img src="Q1 Report on Initiatives Work/Figma2Indesign_01.png" alt="Figma to InDesign 1" loading="lazy"/></div>
+          <div class="wi-ph"><img src="Q1 Report on Initiatives Work/Figma2Indesign_02.png" alt="Figma to InDesign 2" loading="lazy"/></div>
+          <div class="wi-ph"><img src="Q1 Report on Initiatives Work/Figma2Indesign_03.png" alt="Figma to InDesign 3" loading="lazy"/></div>
+        </div></div>
+        <div class="work-stats"><div class="ws"><div class="wsv">~5–12 h</div><div class="wsl">Time saved per design system</div></div><div class="ws"><div class="wsv">~10–50&times;</div><div class="wsl">Speed increase</div></div><div class="ws"><div class="wsv">Design system sync</div><div class="wsl">Primary use</div></div></div>
+        <details class="work-dropdown"><summary>Full report</summary><div class="wd-inner"><div class="rpt">
+          <h3>Overview</h3><p><strong>Figma Styles to InDesign</strong> — Figma plugin + InDesign script. Extracts paragraph, character, color, and effect styles from Figma and imports into InDesign. Supports merge when updating existing docs so styles refresh without duplication.</p>
+          <h3>Import/Export vs Create-and-Edit</h3><p><strong>Export</strong> styles from Figma &rarr; <strong>Import</strong> in InDesign. One flow; styles created in bulk. Without it: manually creating each style in InDesign and matching Figma by hand. <strong>Recommendation:</strong> Use import/export.</p>
+          <h3>Time Savings &amp; Speed</h3><p>~5–8 hours per design system (vs manual creation of 20–50+ styles). ~10–50&times; speed increase.</p>
+        </div></div></details>
+      </div>
+    </article>
+
+    <!-- 3. Font Unit & Accessibility Checker -->
+    <article class="work-card" id="w-font-acc">
+      <div class="work-accent" style="background:linear-gradient(180deg,#059669,#10b981)"></div>
+      <div class="work-body">
+        <h3>Font Unit &amp; Accessibility Checker</h3>
+        <p class="work-desc">Dynamic type scale and WCAG 2.1 tool. Font sizing, unit conversions (px, pt, rem, em, vw, vh, %), contrast across Web, Print, Mobile. Export XML, JSON, CSV, JSX, IDJS.</p>
+        <p class="work-example">e.g. Defining body/heading sizes for web and print to meet WCAG AA; exporting scale for dev or InDesign.</p>
+        <a class="work-link" href="https://bridge-dull-12878727.figma.site/" target="_blank" rel="noopener">Open tool <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7h-8M17 7v8"/></svg></a>
+        <div class="work-images"><div class="work-images-grid">
+          <div class="wi-ph"><img src="Q1 Report on Initiatives Work/FontUnit_AccessibilityChecker_01.png" alt="Font Accessibility 1" loading="lazy"/></div>
+          <div class="wi-ph"><img src="Q1 Report on Initiatives Work/FontUnit_AccessibilityChecker_02.png" alt="Font Accessibility 2" loading="lazy"/></div>
+          <div class="wi-ph"><img src="Q1 Report on Initiatives Work/FontUnit_AccessibilityChecker_03.png" alt="Font Accessibility 3" loading="lazy"/></div>
+          <div class="wi-ph"><img src="Q1 Report on Initiatives Work/FontUnit_AccessibilityChecker_04.png" alt="Font Accessibility 4" loading="lazy"/></div>
+          <div class="wi-ph"><img src="Q1 Report on Initiatives Work/FontUnit_AccessibilityChecker_05.png" alt="Font Accessibility 5" loading="lazy"/></div>
+          <div class="wi-ph"><img src="Q1 Report on Initiatives Work/FontUnit_AccessibilityChecker_06.png" alt="Font Accessibility 6" loading="lazy"/></div>
+        </div></div>
+        <div class="work-stats"><div class="ws"><div class="wsv">~4–6 h</div><div class="wsl">Time saved per type-scale check</div></div><div class="ws"><div class="wsv">Web / Print / Mobile</div><div class="wsl">Contexts</div></div><div class="ws"><div class="wsv">WCAG 2.1</div><div class="wsl">Standards</div></div></div>
+        <details class="work-dropdown"><summary>Full report</summary><div class="wd-inner"><div class="rpt">
+          <h3>1. Overview</h3><p>Dynamic Type Scale Accessibility Tool for checking font sizing, unit conversions, and WCAG 2.1 contrast and readability across Web, Print, and Mobile. Supports font selection, type scale generation, DPI settings, and export (XML, JSON, CSV, JSX, IDJS).</p>
+          <h3>2. Contexts</h3><table><tr><th>Context</th><th>Dimensions</th><th>Base</th><th>DPI</th></tr><tr><td>Web</td><td>1920&times;1080</td><td>16px</td><td>96</td></tr><tr><td>Print</td><td>816&times;1056</td><td>12px</td><td>96</td></tr><tr><td>Mobile</td><td>375&times;667</td><td>16px</td><td>96</td></tr></table>
+          <h3>3. Type Scale</h3><p>Seven-level scale (XS–3XL). XS ~8.2px FAIL, SM ~10.2px FAIL, BASE ~12.8px FAIL, LG 16px PASS, XL 20px PASS, 2XL 25px PASS, 3XL ~31.3px PASS.</p>
+          <h3>4. Accessibility</h3><p><strong>Contrast:</strong> AA 4.5:1, AAA 7:1. <strong>Font size:</strong> Minimum 16px for body text. Exports support design and dev workflows including InDesign XML import.</p>
+        </div></div></details>
+      </div>
+    </article>
+
+    <!-- 4. Invesco Concept Factsheet -->
+    <article class="work-card" id="w-invesco">
+      <div class="work-accent" style="background:linear-gradient(180deg,#d97706,#f59e0b)"></div>
+      <div class="work-body">
+        <h3>Invesco Concept Factsheet</h3>
+        <p class="work-desc">Four-page Figma prototype: summary metrics, performance vs benchmark, top 10 holdings, portfolio/risk, breakdowns, manager commentary, fund info, legal/disclosure. Reference for structure and compliance wording.</p>
+        <p class="work-example">e.g. Standard layout and disclosure blocks for new fund factsheets; swap in fund data, keep risk/legal consistent.</p>
+        <a class="work-link" href="https://middle-markup-58597903.figma.site/" target="_blank" rel="noopener">Open concept factsheet <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7h-8M17 7v8"/></svg></a>
+        <div class="work-images"><div class="work-images-grid">
+          <div class="wi-ph"><img src="Q1 Report on Initiatives Work/Invesco_01.png" alt="Invesco 1" loading="lazy"/></div>
+          <div class="wi-ph"><img src="Q1 Report on Initiatives Work/Invesco_02.png" alt="Invesco 2" loading="lazy"/></div>
+          <div class="wi-ph"><img src="Q1 Report on Initiatives Work/Invesco_03.png" alt="Invesco 3" loading="lazy"/></div>
+        </div></div>
+        <div class="work-stats"><div class="ws"><div class="wsv">~4–5 h</div><div class="wsl">Time saved per factsheet</div></div><div class="ws"><div class="wsv">4-page</div><div class="wsl">Prototype</div></div><div class="ws"><div class="wsv">Factsheet structure</div><div class="wsl">Primary use</div></div></div>
+        <details class="work-dropdown"><summary>Full report</summary><div class="wd-inner"><div class="rpt">
+          <h3>1. Overview</h3><p>Concept factsheet for <strong>Invesco Global Growth Fund</strong> (Class A - USD), as of March 31, 2026. Four-page Figma prototype covering fund summary, performance, holdings, risk metrics, breakdowns, and legal/disclosure.</p>
+          <h3>2. Key Metrics</h3><table><tr><th>Metric</th><th>Value</th></tr><tr><td>NAV</td><td>$42.87 (+0.54%)</td></tr><tr><td>Total Net Assets</td><td>$2.4B</td></tr><tr><td>YTD Return</td><td>+8.42%</td></tr><tr><td>1 Year</td><td>+12.35% (vs +10.87% index)</td></tr></table>
+          <h3>3. Performance vs MSCI ACWI</h3><table><tr><th>Period</th><th>Fund</th><th>Benchmark</th><th>+/-</th></tr><tr><td>3M</td><td>+8.42%</td><td>+7.23%</td><td>+1.19</td></tr><tr><td>1Y</td><td>+12.35%</td><td>+10.87%</td><td>+1.48</td></tr><tr><td>3Y Ann.</td><td>+9.18%</td><td>+8.24%</td><td>+0.94</td></tr></table>
+          <h3>4. Top 10 Holdings (53.5%)</h3><p>MSFT 8.5%, AAPL 7.2%, NVDA 6.8%, AMZN 5.9%, GOOGL 5.3%, META 4.7%, TSLA 4.2%, JNJ 3.9%, V 3.6%, UNH 3.4%. Total portfolio: 68 holdings.</p>
+        </div></div></details>
+      </div>
+    </article>
+
+    <!-- 5. Kleen -->
+    <article class="work-card" id="w-kleen">
+      <div class="work-accent" style="background:linear-gradient(180deg,#65a30d,#84cc16)"></div>
+      <div class="work-body">
+        <h3>Kleen</h3>
+        <p class="work-desc">InDesign script. Cleanup: empty frames, unused styles/swatches, hidden objects, overrides, duplicate swatches. Checklist + Unused/Duplicates views; save/load presets. One undo reverts all.</p>
+        <p class="work-example">e.g. Before final delivery or archive: remove empties and duplicates so file is lean and consistent.</p>
+        <a class="work-link" href="#">Kleen.jsx <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7h-8M17 7v8"/></svg></a>
+        <div class="work-images"><div class="work-images-grid">
+          <div class="wi-ph"><img src="Q1 Report on Initiatives Work/Kleen_01.png" alt="Kleen 1" loading="lazy"/></div>
+          <div class="wi-ph"><img src="Q1 Report on Initiatives Work/Kleen_02.png" alt="Kleen 2" loading="lazy"/></div>
+          <div class="wi-ph"><img src="Q1 Report on Initiatives Work/Kleen_03.png" alt="Kleen 3" loading="lazy"/></div>
+          <div class="wi-ph"><img src="Q1 Report on Initiatives Work/Kleen_04.png" alt="Kleen 4" loading="lazy"/></div>
+          <div class="wi-ph"><img src="Q1 Report on Initiatives Work/Kleen_05.png" alt="Kleen 5" loading="lazy"/></div>
+          <div class="wi-ph"><img src="Q1 Report on Initiatives Work/Kleen_06.png" alt="Kleen 6" loading="lazy"/></div>
+          <div class="wi-ph"><img src="Q1 Report on Initiatives Work/Kleen_07.png" alt="Kleen 7" loading="lazy"/></div>
+          <div class="wi-ph"><img src="Q1 Report on Initiatives Work/Kleen_08.png" alt="Kleen 8" loading="lazy"/></div>
+          <div class="wi-ph"><img src="Q1 Report on Initiatives Work/Kleen_09.png" alt="Kleen 9" loading="lazy"/></div>
+          <div class="wi-ph"><img src="Q1 Report on Initiatives Work/Kleen_010.png" alt="Kleen 10" loading="lazy"/></div>
+          <div class="wi-ph"><img src="Q1 Report on Initiatives Work/Kleen_011.png" alt="Kleen 11" loading="lazy"/></div>
+        </div></div>
+        <div class="work-stats"><div class="ws"><div class="wsv">~4–5 h</div><div class="wsl">Time saved per document</div></div><div class="ws"><div class="wsv">~5–15&times;</div><div class="wsl">Speed increase</div></div><div class="ws"><div class="wsv">Document cleanup</div><div class="wsl">Primary use</div></div></div>
+        <details class="work-dropdown"><summary>Full report</summary><div class="wd-inner"><div class="rpt">
+          <h3>1. Overview</h3><p><strong>Kleen</strong> is an InDesign document cleanup script. Targets empty frames, unused styles/swatches, hidden objects, overrides, and duplicate swatches. Checklist, Unused/Duplicates views, presets, single undo.</p>
+          <h3>2. What Kleen Cleans</h3><table><tr><th>Target</th><th>Description</th></tr><tr><td>Empty frames</td><td>No content</td></tr><tr><td>Unused styles</td><td>Paragraph, character, object, table, cell</td></tr><tr><td>Unused swatches</td><td>Colors not in use</td></tr><tr><td>Hidden objects</td><td>Pasteboard or hidden</td></tr><tr><td>Overrides</td><td>Local formatting overrides</td></tr><tr><td>Duplicate swatches</td><td>Same values, different names</td></tr></table>
+          <h3>3. Time Savings</h3><p>~20–60 min per document. ~5–15&times; speed increase.</p>
+        </div></div></details>
+      </div>
+    </article>
+
+    <!-- 6. KTool Brand Control -->
+    <article class="work-card" id="w-ktool-brand">
+      <div class="work-accent" style="background:linear-gradient(180deg,#7c3aed,#8b5cf6)"></div>
+      <div class="work-body">
+        <h3>KTool — Brand Control</h3>
+        <p class="work-desc">Central design-system and brand governance. Colors, typography, spacing, borders, shadows, animation, layout, data viz. Component library (Navigation, Forms, Content, Feedback, Data Viz, etc.). Save, Reset, Export, Import.</p>
+        <p class="work-example">e.g. Rolling out new brand palette and checking all navigation and form components in one place.</p>
+        <a class="work-link" href="https://chisel-rouge-37767861.figma.site/" target="_blank" rel="noopener">Open KTool Brand Control <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7h-8M17 7v8"/></svg></a>
+        <div class="work-images"><div class="work-images-grid">
+          <div class="wi-ph"><img src="Q1 Report on Initiatives Work/KTool-BrandController_01.png" alt="KTool Brand 1" loading="lazy"/></div>
+          <div class="wi-ph"><img src="Q1 Report on Initiatives Work/KTool-BrandController_02.png" alt="KTool Brand 2" loading="lazy"/></div>
+        </div></div>
+        <div class="work-stats"><div class="ws"><div class="wsv">~4–6 h</div><div class="wsl">Time saved per brand update</div></div><div class="ws"><div class="wsv">8</div><div class="wsl">Control panels</div></div><div class="ws"><div class="wsv">Component library</div><div class="wsl">Primary use</div></div></div>
+        <details class="work-dropdown"><summary>Full report</summary><div class="wd-inner"><div class="rpt">
+          <h3>1. Overview</h3><p><strong>KTool - Brand Control</strong> — design-system and brand governance for Kurtosys. Centralised control of brand colours, typography, spacing, borders, shadows, animation, layout, data viz. Component Library previews UI components with active tokens.</p>
+          <h3>2. Control Panels</h3><table><tr><th>Tab</th><th>Purpose</th></tr><tr><td>Colors</td><td>Brand, surface, text, semantic, form</td></tr><tr><td>Typography</td><td>Type scale &amp; text styles</td></tr><tr><td>Spacing</td><td>Spacing scale &amp; layout</td></tr><tr><td>Borders</td><td>Width, radius, style</td></tr><tr><td>Shadows</td><td>Elevation &amp; shadow tokens</td></tr><tr><td>Animation</td><td>Motion &amp; transitions</td></tr><tr><td>Layout</td><td>Grid, breakpoints, rules</td></tr><tr><td>Data Viz</td><td>Chart tokens</td></tr></table>
+          <h3>3. Component Library</h3><p>Navigation (8), Forms (12), Content (10), Feedback (7), Data Viz (6), Layout (5), App (12), Asset &amp; Investment (15).</p>
+        </div></div></details>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- Time Savings Charts -->
+<section class="section reveal">
+  <div class="charts-row">
+    <div class="chart-card"><div class="chart-title"><span class="sdot" style="background:var(--primary)"></span> Time Savings per Tool (hours)</div><div class="bar-chart" id="savingsChart"></div></div>
+    <div class="chart-card"><div class="chart-title"><span class="sdot" style="background:var(--violet)"></span> Speed Multiplier (&times; faster)</div><div class="bar-chart" id="speedChart"></div></div>
+  </div>
+</section>
+
+<!-- Pipeline -->
+<section class="section reveal">
+  <div class="section-head"><h2 class="section-title"><span class="sdot" style="background:var(--amber)"></span> Automation Pipeline — 105 Ideas</h2><span class="section-badge" style="background:var(--amber-dim);color:var(--amber)">Feature Backlog</span></div>
+  <div class="pipe-grid">
+    <div class="pipe-card"><div class="pipe-num" style="color:var(--rose)">37</div><div class="pipe-name">High Priority</div></div>
+    <div class="pipe-card"><div class="pipe-num" style="color:var(--amber)">42</div><div class="pipe-name">Medium Priority</div></div>
+    <div class="pipe-card"><div class="pipe-num" style="color:var(--text3)">26</div><div class="pipe-name">Low Priority</div></div>
+    <div class="pipe-card"><div class="pipe-num" style="color:var(--primary)">13</div><div class="pipe-name">Categories</div></div>
+    <div class="pipe-card"><div class="pipe-num" style="color:var(--emerald)">6</div><div class="pipe-name">Completed / Active</div></div>
+    <div class="pipe-card"><div class="pipe-num" style="color:var(--violet)">3</div><div class="pipe-name">Tech Stacks</div></div>
+  </div>
+  <div class="chart-card" style="margin-top:1rem"><div class="chart-title"><span class="sdot" style="background:var(--amber)"></span> Category Breakdown</div><div class="bar-chart" id="catChart"></div></div>
+</section>
+
+<!-- Projected Impact -->
+<section class="section reveal">
+  <div class="section-head"><h2 class="section-title"><span class="sdot" style="background:var(--rose)"></span> Projected Impact — Before vs After</h2><span class="section-badge" style="background:var(--rose-dim);color:var(--rose)">Projections</span></div>
+  <div class="impact-grid">
+    <div class="impact-card"><div class="impact-lbl" style="color:var(--primary)">&#128337; Cycle Time</div><div class="impact-before"><span class="itag b">Before</span><span class="ival">4–6 weeks</span></div><div class="impact-after"><span class="itag a">Target</span><span class="ival" style="color:var(--emerald)">2–3 weeks</span></div><div class="impact-desc">Fewer handovers, earlier design inputs, standardised templates</div></div>
+    <div class="impact-card"><div class="impact-lbl" style="color:var(--amber)">&#128259; Rework Rate</div><div class="impact-before"><span class="itag b">Before</span><span class="ival">25–35%</span></div><div class="impact-after"><span class="itag a">Target</span><span class="ival" style="color:var(--emerald)">10–15%</span></div><div class="impact-desc">Clear DoR/DoD, RACI, design specs earlier</div></div>
+    <div class="impact-card"><div class="impact-lbl" style="color:var(--violet)">&#128101; Handover Points</div><div class="impact-before"><span class="itag b">Before</span><span class="ival">6–8</span></div><div class="impact-after"><span class="itag a">Target</span><span class="ival" style="color:var(--emerald)">3–4</span></div><div class="impact-desc">Simplified 3-phase delivery model</div></div>
+    <div class="impact-card"><div class="impact-lbl" style="color:var(--emerald)">&#9889; Automation Savings</div><div class="impact-before"><span class="itag b">Before</span><span class="ival">0 h/week</span></div><div class="impact-after"><span class="itag a">Target</span><span class="ival" style="color:var(--emerald)">15–50 h/week</span></div><div class="impact-desc">12 tools deployed across InDesign, Figma, design system</div></div>
+    <div class="impact-card"><div class="impact-lbl" style="color:var(--blue)">&#9855; Accessibility</div><div class="impact-before"><span class="itag b">Before</span><span class="ival">Manual</span></div><div class="impact-after"><span class="itag a">Target</span><span class="ival" style="color:var(--emerald)">Automated WCAG 2.1</span></div><div class="impact-desc">Font checker, type scale, embedded in tooling</div></div>
+    <div class="impact-card"><div class="impact-lbl" style="color:var(--coral)">&#128200; Predictability</div><div class="impact-before"><span class="itag b">Before</span><span class="ival">Low</span></div><div class="impact-after"><span class="itag a">Target</span><span class="ival" style="color:var(--emerald)">High</span></div><div class="impact-desc">Governance, stage gates, clear ownership</div></div>
+  </div>
+</section>
+
+<!-- Deep Dive -->
+<section class="section reveal">
+  <div class="section-head"><h2 class="section-title"><span class="sdot" style="background:var(--primary)"></span> Deep Dive — K2-9226 Delivery Flow</h2><span class="section-badge" style="background:var(--primary-dim);color:var(--primary)">Tonderai Matanga</span></div>
+  <div class="charts-row">
+    <div class="chart-card"><div class="chart-title" style="font-size:.8125rem">Current State Problems</div>
+      <div class="problem-pill" style="background:var(--rose-light);color:var(--rose)">Linear, handover-heavy process</div>
+      <div class="problem-pill" style="background:var(--rose-light);color:var(--rose)">Design introduced too late in cycle</div>
+      <div class="problem-pill" style="background:var(--rose-light);color:var(--rose)">Multiple approval loops create bottlenecks</div>
+      <div class="problem-pill" style="background:var(--rose-light);color:var(--rose)">Fragmented ownership between teams</div>
+    </div>
+    <div class="chart-card"><div class="chart-title" style="font-size:.8125rem">Future State — 3-Phase Model</div>
+      <div class="phase-card" style="background:var(--emerald-light)"><div class="phase-num" style="color:var(--emerald)">Phase 1</div><div class="phase-title">Discovery &amp; Feasibility</div><div class="phase-desc">Map requirements, assess feasibility, align stakeholders</div></div>
+      <div class="phase-card" style="background:var(--blue-light)"><div class="phase-num" style="color:var(--blue)">Phase 2</div><div class="phase-title">Design &amp; Alignment</div><div class="phase-desc">Build-ready design inputs, clear ownership, structured collaboration</div></div>
+      <div class="phase-card" style="background:var(--violet-light)"><div class="phase-num" style="color:var(--violet)">Phase 3</div><div class="phase-title">Build &amp; Validation</div><div class="phase-desc">Configuration, QA, UAT with defined gates (DoR / DoD)</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- Success Criteria -->
+<section class="section reveal">
+  <div class="section-head"><h2 class="section-title"><span class="sdot" style="background:var(--emerald)"></span> Success Criteria</h2><span class="section-badge" style="background:var(--emerald-dim);color:var(--emerald)">Measurable Outcomes</span></div>
+  <div class="criteria-list">
+    <div class="crit"><div class="crit-chk">&#10003;</div><div class="crit-txt">Implementation cycle time is measurably reduced through fewer handovers and earlier design inputs</div></div>
+    <div class="crit"><div class="crit-chk">&#10003;</div><div class="crit-txt">Handover points reduced from 6–8 to 3–4 with simplified 3-phase delivery</div></div>
+    <div class="crit"><div class="crit-chk">&#10003;</div><div class="crit-txt">Rework during build and QA decreases from 25–35% to 10–15%</div></div>
+    <div class="crit"><div class="crit-chk">&#10003;</div><div class="crit-txt">Teams report improved clarity and efficiency with defined RACI</div></div>
+    <div class="crit"><div class="crit-chk">&#10003;</div><div class="crit-txt">Delivery becomes more predictable with standardised templates and discovery phase</div></div>
+    <div class="crit"><div class="crit-chk">&#10003;</div><div class="crit-txt">Automation saves 15–50 hours per week across the team via 12 deployed tools</div></div>
+    <div class="crit"><div class="crit-chk">&#10003;</div><div class="crit-txt">Accessibility compliance automated through WCAG 2.1 tooling in the workflow</div></div>
+  </div>
+</section>
+
+<footer class="dash-footer">Implementation Design — Initiative Dashboard 2026 &middot; Kurtosys &middot; 20 March 2026 &middot; Reporter: Earl Petersen &middot; Reporting to: Nyasha Nyaguwa</footer>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lb" role="dialog" aria-modal="true"><div class="lightbox-content"><div id="lb-img-wrap"></div></div><div class="lb-ui"><span class="lb-title" id="lbTitle"></span><span class="lb-count" id="lbCount"></span><div class="lb-nav"><button id="lbPrev">Prev</button><button id="lbNext">Next</button></div><button class="lb-close" id="lbClose">&times;</button></div></div>
+
+<script>
+(function(){
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+// Theme
+const html = document.documentElement;
+const thBtn = $('#themeToggle');
+let theme = localStorage.getItem('id-theme') || 'light';
+function setTheme(t){theme=t;html.setAttribute('data-theme',t);localStorage.setItem('id-theme',t);thBtn.textContent=t==='dark'?'\u2600':'\u263D'}
+setTheme(theme);
+thBtn.addEventListener('click',()=>setTheme(theme==='light'?'dark':'light'));
+
+// Reveal
+const obs = new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')})},{threshold:.06});
+$$('.reveal').forEach(r=>obs.observe(r));
+
+// Gantt
+const gData=[
+  {id:'K2-9226',name:'Reducing Implementation Time',owner:'Tonderai Matanga',h:40,s:'2026-01-14',e:'2026-03-31',c:'#0d9488'},
+  {id:'K2-9227',name:'Design & PC Responsibilities',owner:'Zaheed Manuel',h:40,s:'2026-01-14',e:'2026-03-31',c:'#2563eb'},
+  {id:'K2-9228',name:'Automation & Platform Tools',owner:'Christyn Pienaar',h:80,s:'2026-01-14',e:'2026-03-31',c:'#059669'},
+  {id:'K2-9229',name:'Discovery & Templates',owner:'Kylie Potter',h:60,s:'2026-01-14',e:'2026-03-31',c:'#d97706'},
+  {id:'K2-9233',name:'Accessibility & Automation',owner:'Earl Petersen',h:80,s:'2026-01-14',e:'2026-03-31',c:'#e11d48'},
+  {id:'K2-9234',name:'New Working Model',owner:'Nyasha Nyaguwa',h:40,s:'2026-01-14',e:'2026-03-31',c:'#7c3aed'},
+  {id:'K2-9231',name:'Strategic Role of Design',owner:'Earl Petersen',h:40,s:'2026-04-01',e:'2026-06-30',c:'#4f46e5'},
+  {id:'K2-9230',name:'Upskilling & Cross-Training',owner:'Nyasha Nyaguwa',h:80,s:'2026-07-01',e:'2026-09-30',c:'#65a30d'},
+];
+const gS=new Date(2026,0,1),gE=new Date(2026,9,1),tD=(gE-gS)/864e5;
+const today=new Date(2026,2,20),tPct=((today-gS)/864e5)/tD*100;
+const gBody=$('#ganttBody');
+gData.forEach(d=>{
+  const s1=(new Date(d.s)-gS)/864e5,e1=(new Date(d.e)-gS)/864e5,l=s1/tD*100,w=(e1-s1)/tD*100;
+  const row=document.createElement('div');row.className='gantt-row';
+  row.innerHTML=`<div class="gantt-lbl"><span class="gantt-lbl-t">${d.name}</span><span class="gantt-lbl-o">${d.owner}</span><span class="gantt-lbl-h">${d.h}h &middot; ${d.id}</span></div>${'<div class="gantt-cell"></div>'.repeat(9)}`;
+  gBody.appendChild(row);
+  setTimeout(()=>{
+    const cells=row.querySelectorAll('.gantt-cell');
+    if(!cells.length)return;
+    const fr=cells[0].getBoundingClientRect(),lr=cells[8].getBoundingClientRect(),tw=lr.right-fr.left;
+    const bar=document.createElement('div');bar.className='gantt-bar';
+    bar.style.cssText=`background:linear-gradient(90deg,${d.c},${d.c}cc);left:${l/100*tw}px;width:${w/100*tw}px`;
+    bar.title=`${d.name} — ${d.owner} — ${d.h}h`;
+    cells[0].appendChild(bar);
+    const tl=document.createElement('div');tl.className='gantt-today';tl.style.left=tPct/100*tw+'px';
+    cells[0].appendChild(tl);
+  },80);
+});
+
+// Donut
+const tMembers=[
+  {n:'Earl Petersen',h:120,c:'#e11d48'},{n:'Nyasha Nyaguwa',h:120,c:'#7c3aed'},
+  {n:'Christyn Pienaar',h:80,c:'#059669'},{n:'Kylie Potter',h:60,c:'#d97706'},
+  {n:'Tonderai Matanga',h:40,c:'#0d9488'},{n:'Zaheed Manuel',h:40,c:'#2563eb'}
+];
+const total=tMembers.reduce((s,d)=>s+d.h,0);
+const svg=$('#donut'),leg=$('#donutLeg');
+const cx=100,cy=100,r=70,circ=2*Math.PI*r;
+let off=0;
+tMembers.forEach(d=>{
+  const pct=d.h/total,dash=pct*circ;
+  const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+  c.setAttribute('cx',cx);c.setAttribute('cy',cy);c.setAttribute('r',r);
+  c.setAttribute('fill','none');c.setAttribute('stroke',d.c);c.setAttribute('stroke-width',18);
+  c.setAttribute('stroke-dasharray',`${dash} ${circ-dash}`);c.setAttribute('stroke-dashoffset',-off);
+  c.setAttribute('transform',`rotate(-90 ${cx} ${cy})`);svg.appendChild(c);off+=dash;
+  const li=document.createElement('div');li.className='legend-item';
+  li.innerHTML=`<span class="legend-dot" style="background:${d.c}"></span>${d.n}<span class="legend-val">${d.h}h</span>`;
+  leg.appendChild(li);
+});
+const ct=document.createElementNS('http://www.w3.org/2000/svg','text');
+ct.setAttribute('x',cx);ct.setAttribute('y',cy-4);ct.setAttribute('text-anchor','middle');ct.setAttribute('fill','currentColor');ct.setAttribute('font-size','22');ct.setAttribute('font-weight','800');ct.textContent=total+'h';svg.appendChild(ct);
+const cs=document.createElementNS('http://www.w3.org/2000/svg','text');
+cs.setAttribute('x',cx);cs.setAttribute('y',cy+13);cs.setAttribute('text-anchor','middle');cs.setAttribute('fill','var(--text3)');cs.setAttribute('font-size','9');cs.setAttribute('font-weight','600');cs.textContent='TOTAL';svg.appendChild(cs);
+
+// Radials
+const qs=[{l:'Q1',h:340,c:'var(--primary)'},{l:'Q2',h:40,c:'var(--violet)'},{l:'Q3',h:80,c:'var(--emerald)'}];
+const rw=$('#radials');
+qs.forEach(q=>{
+  const pct=(q.h/total*100).toFixed(0),r2=48,c2=2*Math.PI*r2,dl=q.h/total*c2;
+  const d=document.createElement('div');d.className='radial';
+  d.innerHTML=`<svg viewBox="0 0 110 110" width="110" height="110"><circle class="radial-bg" cx="55" cy="55" r="${r2}"/><circle class="radial-fill" cx="55" cy="55" r="${r2}" stroke="${q.c}" stroke-dasharray="${c2}" stroke-dashoffset="${c2-dl}"/></svg><div class="radial-center"><span class="radial-pct" style="color:${q.c}">${q.h}h</span><span class="radial-lbl">${q.l} (${pct}%)</span></div>`;
+  rw.appendChild(d);
+});
+
+// Initiatives
+const inits=[
+  {id:'K2-9226',name:'Reducing Project Implementation Time and Handover Points',owner:'Tonderai Matanga',h:40,start:'14 Jan 2026',end:'31 Mar 2026',c:'teal',p:65,obj:['Reduce overall implementation cycle time','Minimise non-value-adding handovers','Improve ownership clarity'],out:['Simplified flow with fewer handovers','Earlier build-ready design inputs','Reduced rework','Improved delivery predictability'],del:['Current-state analysis','Delay & rework report','Bottleneck register','Future-state model']},
+  {id:'K2-9227',name:'Redefining Design and PC Responsibilities',owner:'Zaheed Manuel',h:40,start:'14 Jan 2026',end:'31 Mar 2026',c:'blue',p:55,obj:['Define clear boundaries Design/PC','Document RACI','Align handover expectations'],out:['Reduced ambiguity','Faster decisions','Clearer escalation'],del:['RACI matrix','Responsibility docs','Handover protocol']},
+  {id:'K2-9228',name:'Leveraging Automation and Platform Tools',owner:'Christyn Pienaar',h:80,start:'14 Jan 2026',end:'31 Mar 2026',c:'emerald',p:70,obj:['Increase automation usage','Build and deploy tools','Track time savings'],out:['12 tools built','105 automation ideas (37 high)','4–12h saved/workflow','13 categories identified'],del:['Figma Styles to InDesign','Font/Accessibility Checker','Kleen','KTool Brand Control','Invesco Factsheet','Smart Table Styler','Feature Automation Backlog']},
+  {id:'K2-9229',name:'Discovery Phase and Template Standardisation',owner:'Kylie Potter',h:60,start:'14 Jan 2026',end:'31 Mar 2026',c:'amber',p:50,obj:['Consistent discovery approach','Standardise templates','Reusable patterns'],out:['Reduced setup time','Consistent quality','Faster onboarding'],del:['Discovery checklist','Template library','Patterns documentation']},
+  {id:'K2-9233',name:'Accessibility Initiatives and Automation',owner:'Earl Petersen',h:80,start:'14 Jan 2026',end:'31 Mar 2026',c:'rose',p:60,obj:['Embed accessibility standards','Automate WCAG 2.1 checks','Integrate into automation'],out:['Consistent WCAG compliance','Automated checks','Accessibility embedded in tools'],del:['Font/Accessibility Checker','Automation integration','WCAG documentation']},
+  {id:'K2-9234',name:'Implementation of New Working Model',owner:'Nyasha Nyaguwa',h:40,start:'14 Jan 2026',end:'31 Mar 2026',c:'violet',p:45,obj:['Implement new operating model','Define impact metrics','Track issue reduction'],out:['Measurable improvement','Reduced design issues','Team alignment'],del:['Operating model doc','Measurement framework','Issue tracking baseline']},
+  {id:'K2-9231',name:'Strategic Role of Design Team',owner:'Earl Petersen',h:40,start:'01 Apr 2026',end:'30 Jun 2026',c:'indigo',p:10,obj:['Define strategic position','Align to business outcomes','Design as value driver'],out:['Clear strategic narrative','Delivery partner positioning','Improved perception'],del:['Positioning document','Value proposition','Stakeholder plan']},
+  {id:'K2-9230',name:'Upskilling and Cross-Training',owner:'Nyasha Nyaguwa',h:80,start:'01 Jul 2026',end:'30 Sep 2026',c:'lime',p:0,obj:['Cross-training resilience','Role clarity','Platform proficiency'],out:['Reduced single points of failure','Broader capability','Faster response'],del:['Cross-training plan','Skills matrix','Training schedule']},
+];
+const ig=$('#initGrid');
+inits.forEach(i=>{
+  const card=document.createElement('div');card.className='init-card';card.setAttribute('data-c',i.c);
+  card.innerHTML=`<div class="init-top" onclick="this.parentElement.classList.toggle('expanded')"><div class="init-hdr"><span class="init-id">${i.id}</span><button class="init-expand">&#9660;</button></div><div class="init-name">${i.name}</div><div class="init-meta"><span class="m-chip status">In Progress</span><span class="m-chip time">${i.h}h &middot; ${i.start} – ${i.end}</span><span class="m-chip owner">${i.owner}</span></div><div class="init-progress"><div class="prog-track"><div class="prog-fill" style="width:${i.p}%"></div></div><div class="prog-lbl"><span>Progress</span><span>${i.p}%</span></div></div></div><div class="init-body"><div class="init-body-inner"><div class="body-sec"><h4>Objectives</h4><ul>${i.obj.map(o=>`<li>${o}</li>`).join('')}</ul></div><div class="body-sec"><h4>Desired Outcomes</h4><ul>${i.out.map(o=>`<li>${o}</li>`).join('')}</ul></div><div class="body-sec"><h4>Key Deliverables</h4><ul>${i.del.map(d=>`<li>${d}</li>`).join('')}</ul></div><div class="mini-stats"><div class="mini-stat"><div class="msv">${i.h}h</div><div class="msl">Allocated</div></div><div class="mini-stat"><div class="msv">${i.p}%</div><div class="msl">Complete</div></div><div class="mini-stat"><div class="msv">${i.del.length}</div><div class="msl">Deliverables</div></div></div></div></div>`;
+  ig.appendChild(card);
+});
+
+// Bar charts
+function bars(id,data,max){
+  const c=$(id);
+  data.forEach(d=>{
+    const pct=(d.v/max*100).toFixed(1);
+    const row=document.createElement('div');row.className='bar-row';
+    row.innerHTML=`<span class="bar-lbl" title="${d.l}">${d.l}</span><div class="bar-track"><div class="bar-fill" style="width:0%;background:${d.c}"><span>${d.d}</span></div></div><span class="bar-val">${d.d}</span>`;
+    c.appendChild(row);
+    setTimeout(()=>{row.querySelector('.bar-fill').style.width=pct+'%'},250);
+  });
+}
+bars('#savingsChart',[
+  {l:'Figma to InDesign',v:8,d:'5–8h',c:'linear-gradient(90deg,#0891b2,#22d3ee)'},
+  {l:'Smart Table Styler',v:3,d:'2–3h',c:'linear-gradient(90deg,#2563eb,#60a5fa)'},
+  {l:'Brand Control',v:3,d:'1–3h',c:'linear-gradient(90deg,#7c3aed,#a78bfa)'},
+  {l:'Invesco Factsheet',v:2,d:'1–2h',c:'linear-gradient(90deg,#d97706,#fbbf24)'},
+  {l:'Font/Accessibility',v:1.5,d:'0.5–1.5h',c:'linear-gradient(90deg,#059669,#34d399)'},
+  {l:'TOC Custom Layout',v:1.5,d:'0.5–1.5h',c:'linear-gradient(90deg,#4f46e5,#818cf8)'},
+  {l:'Kleen',v:1,d:'0.3–1h',c:'linear-gradient(90deg,#65a30d,#a3e635)'},
+  {l:'Find Unused Styles',v:.75,d:'15–45m',c:'linear-gradient(90deg,#0891b2,#22d3ee)'},
+  {l:'Place PDF',v:.5,d:'10–30m',c:'linear-gradient(90deg,#d97706,#fbbf24)'},
+],8);
+bars('#speedChart',[
+  {l:'Figma to InDesign',v:50,d:'10–50x',c:'linear-gradient(90deg,#0891b2,#22d3ee)'},
+  {l:'Find Unused Styles',v:20,d:'5–20x',c:'linear-gradient(90deg,#059669,#34d399)'},
+  {l:'Smart Table Styler',v:15,d:'5–15x',c:'linear-gradient(90deg,#2563eb,#60a5fa)'},
+  {l:'Kleen',v:15,d:'5–15x',c:'linear-gradient(90deg,#65a30d,#a3e635)'},
+  {l:'TOC Custom Layout',v:15,d:'5–15x',c:'linear-gradient(90deg,#4f46e5,#818cf8)'},
+  {l:'Place PDF',v:10,d:'3–10x',c:'linear-gradient(90deg,#d97706,#fbbf24)'},
+  {l:'Font/Accessibility',v:10,d:'5–10x',c:'linear-gradient(90deg,#059669,#34d399)'},
+  {l:'Brand Control',v:8,d:'3–8x',c:'linear-gradient(90deg,#7c3aed,#a78bfa)'},
+],50);
+bars('#catChart',[
+  {l:'Investment Reporting',v:18,d:'18 ideas',c:'linear-gradient(90deg,#d97706,#fbbf24)'},
+  {l:'Chart & Table',v:14,d:'14 ideas',c:'linear-gradient(90deg,#0891b2,#22d3ee)'},
+  {l:'Graphic & Image',v:12,d:'12 ideas',c:'linear-gradient(90deg,#059669,#34d399)'},
+  {l:'Typography & Text',v:11,d:'11 ideas',c:'linear-gradient(90deg,#7c3aed,#a78bfa)'},
+  {l:'Quality Control',v:10,d:'10 ideas',c:'linear-gradient(90deg,#e11d48,#fb7185)'},
+  {l:'Doc Structure',v:10,d:'10 ideas',c:'linear-gradient(90deg,#2563eb,#60a5fa)'},
+  {l:'Export & Output',v:9,d:'9 ideas',c:'linear-gradient(90deg,#65a30d,#a3e635)'},
+  {l:'Figma-InDesign',v:8,d:'8 ideas',c:'linear-gradient(90deg,#0891b2,#22d3ee)'},
+  {l:'Interactive & Other',v:13,d:'13 ideas',c:'linear-gradient(90deg,#4f46e5,#818cf8)'},
+],18);
+
+// Lightbox
+const lb=$('#lb'),lbT=$('#lbTitle'),lbC=$('#lbCount'),lbW=$('#lb-img-wrap');
+let gal=[],gi=0;
+function lbOpen(card,idx){
+  const imgs=card.querySelectorAll('.wi-ph');
+  gal=[...imgs];gi=Math.max(0,Math.min(idx,gal.length-1));
+  const t=card.querySelector('h3');lbT.textContent=t?t.textContent:'Image';
+  lbShow();lb.classList.add('is-open');
+}
+function lbShow(){
+  lbC.textContent=(gi+1)+' of '+gal.length;lbW.innerHTML='';
+  const img=gal[gi].querySelector('img');
+  if(img&&img.src){const cl=img.cloneNode(true);cl.style.maxWidth='100%';cl.style.maxHeight='70vh';lbW.appendChild(cl)}
+}
+function lbClose(){lb.classList.remove('is-open')}
+function lbNext(){if(gal.length>1){gi=(gi+1)%gal.length;lbShow()}}
+function lbPrev(){if(gal.length>1){gi=(gi-1+gal.length)%gal.length;lbShow()}}
+$$('.work-card').forEach(card=>{
+  card.querySelectorAll('.wi-ph').forEach((ph,i)=>{
+    ph.setAttribute('role','button');ph.setAttribute('tabindex','0');
+    ph.addEventListener('click',()=>lbOpen(card,i));
+    ph.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();lbOpen(card,i)}});
+  });
+});
+$('#lbClose').addEventListener('click',lbClose);
+$('#lbPrev').addEventListener('click',lbPrev);
+$('#lbNext').addEventListener('click',lbNext);
+lb.addEventListener('click',e=>{if(e.target===lb)lbClose()});
+document.addEventListener('keydown',e=>{
+  if(!lb.classList.contains('is-open'))return;
+  if(e.key==='Escape')lbClose();if(e.key==='ArrowLeft')lbPrev();if(e.key==='ArrowRight')lbNext();
+});
+
+// Gantt resize
+let rTimer;
+window.addEventListener('resize',()=>{clearTimeout(rTimer);rTimer=setTimeout(()=>{
+  const rows=gBody.querySelectorAll('.gantt-row');
+  rows.forEach((row,i)=>{
+    const cells=row.querySelectorAll('.gantt-cell'),bar=row.querySelector('.gantt-bar'),tl=row.querySelector('.gantt-today');
+    if(!cells.length||!gData[i])return;
+    const d=gData[i],s1=(new Date(d.s)-gS)/864e5,e1=(new Date(d.e)-gS)/864e5,l=s1/tD*100,w=(e1-s1)/tD*100;
+    const fr=cells[0].getBoundingClientRect(),lr=cells[8].getBoundingClientRect(),tw=lr.right-fr.left;
+    if(bar){bar.style.left=l/100*tw+'px';bar.style.width=w/100*tw+'px'}
+    if(tl){tl.style.left=tPct/100*tw+'px'}
+  });
+},200)});
+})();
+</script>
+</body>
+</html>
